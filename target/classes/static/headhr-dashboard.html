@@ -472,6 +472,10 @@
                     <i class="fas fa-sync-alt"></i>
                     Refresh Applications
                 </button>
+                <button class="btn btn-secondary" onclick="syncWithCamunda()" style="background: var(--warning-color); color: white; border: none;">
+                    <i class="fas fa-sync"></i>
+                    Force Sync with Camunda
+                </button>
                 <a href="/camunda/app/tasklist/default/" target="_blank" class="btn btn-secondary">
                     <i class="fas fa-tasks"></i>
                     Open Tasklist
@@ -598,13 +602,23 @@
         function displayApplications(applications) {
             const container = document.getElementById('applications-container');
             
+            console.log('All applications:', applications);
+            
             // Filter for applications that need Head HR review
             const filteredApps = Object.entries(applications).filter(([id, app]) => {
                 const status = app.applicationStatus || '';
+                const tlDecision = app.tlDecision;
+                const pmDecision = app.pmDecision;
+                
+                console.log(`App ${id}: status=${status}, tlDecision=${tlDecision}, pmDecision=${pmDecision}`);
+                
+                // Show if status indicates Head HR review OR both TL and PM have accepted
                 return status === 'PENDING_HEAD_HR_REVIEW' ||
                        status === 'TLPM_APPROVED' ||
-                       (app.tlDecision === 'accept' && app.pmDecision === 'accept');
+                       (tlDecision === 'accept' && pmDecision === 'accept');
             });
+            
+            console.log('Filtered apps for Head HR:', filteredApps.length);
             
             if (filteredApps.length === 0) {
                 container.innerHTML = `
@@ -612,6 +626,9 @@
                         <i class="fas fa-inbox empty-icon"></i>
                         <h3>No Applications for Final Review</h3>
                         <p>There are no applications pending your final review at this time.</p>
+                        <p style="font-size: 0.9rem; color: var(--gray-500); margin-top: 1rem;">
+                            Total applications in system: ${Object.keys(applications).length}
+                        </p>
                     </div>
                 `;
                 return;
@@ -823,6 +840,36 @@
         window.addEventListener('focus', () => {
             loadApplications();
         });
+        
+        // Function to manually sync with Camunda
+        async function syncWithCamunda() {
+            try {
+                const btn = event.target.closest('button');
+                btn.disabled = true;
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Syncing...';
+                
+                const response = await fetch('/api/job-applications/sync');
+                const data = await response.json();
+                
+                console.log('Sync result:', data);
+                
+                // Reload applications after sync
+                await loadApplications();
+                
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sync"></i> Force Sync with Camunda';
+                
+                alert('Sync completed! Check console for details.');
+                
+            } catch (error) {
+                console.error('Sync failed:', error);
+                alert('Sync failed: ' + error.message);
+                
+                const btn = event.target.closest('button');
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fas fa-sync"></i> Force Sync with Camunda';
+            }
+        }
     </script>
 </body>
 </html>

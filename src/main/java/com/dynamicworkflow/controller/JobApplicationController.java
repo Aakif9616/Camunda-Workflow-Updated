@@ -303,6 +303,31 @@ public class JobApplicationController {
     }
     
     /**
+     * GET /api/job-applications/sync
+     * Manually trigger sync with Camunda (for debugging)
+     */
+    @GetMapping("/sync")
+    public ResponseEntity<Map<String, Object>> syncWithCamunda() {
+        try {
+            // This will trigger the sync in getAllApplications
+            Map<String, Object> result = jobApplicationService.getAllApplications();
+            
+            Map<String, Object> response = new HashMap<>();
+            response.put("message", "Sync completed successfully");
+            response.put("totalApplications", result.get("totalApplications"));
+            response.put("timestamp", System.currentTimeMillis());
+            
+            return ResponseEntity.ok(response);
+            
+        } catch (Exception e) {
+            logger.error("Failed to sync with Camunda", e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+    
+    /**
      * GET /api/job-applications/health
      * Health check endpoint
      */

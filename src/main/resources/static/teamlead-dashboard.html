@@ -501,21 +501,27 @@
         function updateStats(applications) {
             const allApps = Object.values(applications);
             
-            // Filter for applications that need TL review (HR approved)
-            const hrApprovedApps = allApps.filter(app => {
+            // Filter for applications that need TL review OR have been reviewed by TL
+            const relevantApps = allApps.filter(app => {
                 const status = app.applicationStatus || '';
-                // Show applications that are pending HR review or have been approved by HR
+                const tlDecision = app.tlDecision;
+                
+                // Show if: pending review OR already reviewed by TL
                 return status === 'PENDING_HR_REVIEW' || 
                        status === 'HR_APPROVED' ||
                        status === 'PENDING_TL_REVIEW' ||
                        status === 'PENDING_PM_REVIEW' ||
-                       status === 'PENDING_HEAD_HR_REVIEW';
+                       status === 'PENDING_HEAD_HR_REVIEW' ||
+                       tlDecision !== undefined; // Show if TL has made a decision
             });
+            
+            // Count pending (not yet reviewed by TL)
+            const pendingApps = relevantApps.filter(app => !app.tlDecision);
 
             applicationStats = {
                 total: allApps.length,
-                pending: hrApprovedApps.length,
-                hrApproved: hrApprovedApps.length
+                pending: pendingApps.length,
+                hrApproved: relevantApps.length
             };
 
             renderStats();
@@ -532,12 +538,12 @@
                 <div class="stat-card">
                     <i class="fas fa-clock stat-icon" style="color: var(--warning-color);"></i>
                     <div class="stat-number">${applicationStats.pending}</div>
-                    <div class="stat-label">Pending Reviews</div>
+                    <div class="stat-label">Pending Your Review</div>
                 </div>
                 <div class="stat-card">
                     <i class="fas fa-check-circle stat-icon" style="color: var(--success-color);"></i>
                     <div class="stat-number">${applicationStats.hrApproved}</div>
-                    <div class="stat-label">Approved by HR</div>
+                    <div class="stat-label">Total Reviewed</div>
                 </div>
             `;
         }
@@ -545,14 +551,18 @@
         function displayApplications(applications) {
             const container = document.getElementById('applications-container');
             
-            // Filter for applications that need TL review
+            // Filter for applications that need TL review OR have been reviewed by TL
             const filteredApps = Object.entries(applications).filter(([id, app]) => {
                 const status = app.applicationStatus || '';
+                const tlDecision = app.tlDecision;
+                
+                // Show if: pending review OR already reviewed by TL
                 return status === 'PENDING_HR_REVIEW' || 
                        status === 'HR_APPROVED' ||
                        status === 'PENDING_TL_REVIEW' ||
                        status === 'PENDING_PM_REVIEW' ||
-                       status === 'PENDING_HEAD_HR_REVIEW';
+                       status === 'PENDING_HEAD_HR_REVIEW' ||
+                       tlDecision !== undefined; // Show if TL has made a decision
             });
             
             if (filteredApps.length === 0) {
@@ -560,7 +570,7 @@
                     <div class="empty-state">
                         <i class="fas fa-inbox empty-icon"></i>
                         <h3>No Applications to Review</h3>
-                        <p>There are no applications pending your review at this time.</p>
+                        <p>There are no applications for your review at this time.</p>
                     </div>
                 `;
                 return;
@@ -569,6 +579,36 @@
             let html = '';
             
             filteredApps.forEach(([appId, appData]) => {
+                const tlDecision = appData.tlDecision;
+                const isReviewed = tlDecision !== undefined;
+                
+                // Determine status badge
+                let statusBadge = '';
+                if (isReviewed) {
+                    if (tlDecision === 'accept') {
+                        statusBadge = `
+                            <div class="status-badge" style="background: var(--success-color); color: white;">
+                                <i class="fas fa-check-circle"></i>
+                                Approved by You
+                            </div>
+                        `;
+                    } else {
+                        statusBadge = `
+                            <div class="status-badge" style="background: var(--danger-color); color: white;">
+                                <i class="fas fa-times-circle"></i>
+                                Rejected by You
+                            </div>
+                        `;
+                    }
+                } else {
+                    statusBadge = `
+                        <div class="status-badge status-pending">
+                            <i class="fas fa-clock"></i>
+                            Pending TL Review
+                        </div>
+                    `;
+                }
+                
                 html += `
                     <div class="application-card">
                         <div class="application-header">
@@ -579,10 +619,7 @@
                                 </div>
                                 <div class="application-id">ID: ${appId}</div>
                             </div>
-                            <div class="status-badge status-pending">
-                                <i class="fas fa-clock"></i>
-                                Pending TL Review
-                            </div>
+                            ${statusBadge}
                         </div>
                         
                         <div class="application-details">
@@ -654,11 +691,28 @@
                         </div>
                         ` : ''}
                         
+                        ${isReviewed && appData.tlComments ? `
+                        <div class="hr-comments" style="background: #f0f8ff; border-left-color: #4CAF50;">
+                            <h4 style="color: #4CAF50;">
+                                <i class="fas fa-comment-dots"></i>
+                                Your Review Comments
+                            </h4>
+                            <p>${appData.tlComments}</p>
+                        </div>
+                        ` : ''}
+                        
                         <div class="action-buttons">
-                            <a href="/camunda/app/tasklist/default/" target="_blank" class="camunda-link">
-                                <i class="fas fa-eye"></i>
-                                Review in Camunda Tasklist
-                            </a>
+                            ${!isReviewed ? `
+                                <a href="/camunda/app/tasklist/default/" target="_blank" class="camunda-link">
+                                    <i class="fas fa-eye"></i>
+                                    Review in Camunda Tasklist
+                                </a>
+                            ` : `
+                                <button class="btn btn-secondary" disabled style="opacity: 0.6;">
+                                    <i class="fas fa-check"></i>
+                                    Already Reviewed
+                                </button>
+                            `}
                             <a href="/api/job-applications/${appId}/hr-summary" target="_blank" class="btn btn-secondary">
                                 <i class="fas fa-file-alt"></i>
                                 View Full Details
