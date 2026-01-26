@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Team Lead Dashboard - Job Applications</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary-color: #3b82f6;
+            --accent-color: #60a5fa;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #06b6d4;
+            --dark-color: #1f2937;
+            --light-color: #f8fafc;
+            --white: #ffffff;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --border-radius: 8px;
+            --transition: all 0.2s ease;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: var(--gray-50);
+            min-height: 100vh;
+            color: var(--dark-color);
+            line-height: 1.6;
+        }
+
+        .dashboard-container {
+            min-height: 100vh;
+            padding: 2rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .dashboard-header {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-md);
+            text-align: center;
+        }
+
+        .dashboard-title {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+        }
+
+        .dashboard-subtitle {
+            font-size: 1.1rem;
+            color: var(--gray-600);
+            font-weight: 400;
+            margin-bottom: 1.5rem;
+        }
+
+        .role-badge {
+            display: inline-block;
+            background: var(--primary-color);
+            color: var(--white);
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .dashboard-controls {
+            display: flex;
+            justify-content: center;
+            gap: 1rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            box-shadow: var(--shadow-md);
+        }
+
+        .btn-secondary {
+            background: var(--white);
+            color: var(--primary-color);
+            border: 1px solid var(--gray-300);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-50);
+            border-color: var(--primary-color);
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-card {
+            background: var(--white);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            text-align: center;
+            border-left: 4px solid var(--primary-color);
+        }
+
+        .stat-icon {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: var(--primary-color);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--dark-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .stat-label {
+            font-size: 0.9rem;
+            color: var(--gray-600);
+            font-weight: 500;
+        }
+
+        .applications-section {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-md);
+            overflow: hidden;
+        }
+
+        .section-header {
+            background: var(--primary-color);
+            color: var(--white);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .applications-container {
+            padding: 2rem;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .application-card {
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: var(--transition);
+        }
+
+        .application-card:hover {
+            box-shadow: var(--shadow-md);
+            border-color: var(--primary-color);
+        }
+
+        .application-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .applicant-info {
+            flex: 1;
+        }
+
+        .applicant-name {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .application-id {
+            font-size: 0.85rem;
+            color: var(--gray-500);
+            font-family: 'Monaco', 'Menlo', monospace;
+            background: var(--gray-100);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-pending {
+            background: var(--warning-color);
+            color: var(--white);
+        }
+
+        .application-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .detail-item {
+            background: var(--gray-50);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .detail-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--gray-600);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .detail-value {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--dark-color);
+        }
+
+        .hr-comments {
+            background: #e7f3ff;
+            border-left: 4px solid #2196F3;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            border-radius: var(--border-radius);
+        }
+
+        .hr-comments h4 {
+            color: #2196F3;
+            font-size: 0.9rem;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .hr-comments p {
+            color: var(--dark-color);
+            font-size: 0.95rem;
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .camunda-link {
+            background: var(--info-color);
+            color: var(--white);
+            padding: 0.75rem 1.5rem;
+            text-decoration: none;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .camunda-link:hover {
+            background: #0891b2;
+            box-shadow: var(--shadow-md);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--gray-500);
+            font-size: 1.1rem;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--gray-200);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 0.5rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--gray-500);
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            color: var(--gray-300);
+            margin-bottom: 1rem;
+        }
+
+        /* Custom Scrollbar */
+        .applications-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .applications-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .applications-container::-webkit-scrollbar-thumb {
+            background: var(--primary-color);
+            border-radius: 4px;
+        }
+
+        .applications-container::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-dark);
+        }
+    </style>
+</head>
+<body>
+    <div class="dashboard-container">
+        <header class="dashboard-header">
+            <h1 class="dashboard-title">
+                <i class="fas fa-user-tie"></i>
+                Team Lead Dashboard
+            </h1>
+            <p class="dashboard-subtitle">Review and approve job applications - Technical Assessment</p>
+            <span class="role-badge">TEAM LEAD</span>
+            
+            <div class="dashboard-controls">
+                <button class="btn btn-primary" onclick="loadApplications()">
+                    <i class="fas fa-sync-alt"></i>
+                    Refresh Applications
+                </button>
+                <a href="/camunda/app/tasklist/default/" target="_blank" class="btn btn-secondary">
+                    <i class="fas fa-tasks"></i>
+                    Open Tasklist
+                </a>
+                <a href="/hr-dashboard.html" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    HR Dashboard
+                </a>
+            </div>
+        </header>
+
+        <div class="stats-grid" id="stats-grid">
+            <!-- Stats will be populated by JavaScript -->
+        </div>
+
+        <div class="applications-section">
+            <div class="section-header">
+                <h2 class="section-title">
+                    <i class="fas fa-file-alt"></i>
+                    Applications for Review
+                </h2>
+                <span id="last-updated" class="last-updated"></span>
+            </div>
+            
+            <div class="applications-container" id="applications-container">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Loading applications...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let applicationStats = {
+            total: 0,
+            pending: 0,
+            hrApproved: 0
+        };
+
+        async function loadApplications() {
+            try {
+                showLoadingState();
+                const response = await fetch('/api/job-applications/all');
+                const data = await response.json();
+                
+                console.log('Loaded data:', data);
+                
+                updateStats(data.applications || {});
+                displayApplications(data.applications || {});
+                updateLastUpdated();
+                
+            } catch (error) {
+                console.error('Failed to load applications:', error);
+                showErrorState();
+            }
+        }
+
+        function showLoadingState() {
+            document.getElementById('applications-container').innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Loading applications...
+                </div>
+            `;
+        }
+
+        function showErrorState() {
+            document.getElementById('applications-container').innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-triangle empty-icon"></i>
+                    <h3>Failed to load applications</h3>
+                    <p>Please check your connection and try again.</p>
+                    <button class="btn btn-primary" onclick="loadApplications()" style="margin-top: 1rem;">
+                        <i class="fas fa-retry"></i>
+                        Retry
+                    </button>
+                </div>
+            `;
+        }
+
+        function updateStats(applications) {
+            const allApps = Object.values(applications);
+            
+            // Filter for applications that need TL review (HR approved)
+            const hrApprovedApps = allApps.filter(app => {
+                const status = app.applicationStatus || '';
+                // Show applications that are pending HR review or have been approved by HR
+                return status === 'PENDING_HR_REVIEW' || 
+                       status === 'HR_APPROVED' ||
+                       status === 'PENDING_TL_REVIEW' ||
+                       status === 'PENDING_PM_REVIEW' ||
+                       status === 'PENDING_HEAD_HR_REVIEW';
+            });
+
+            applicationStats = {
+                total: allApps.length,
+                pending: hrApprovedApps.length,
+                hrApproved: hrApprovedApps.length
+            };
+
+            renderStats();
+        }
+
+        function renderStats() {
+            const statsGrid = document.getElementById('stats-grid');
+            statsGrid.innerHTML = `
+                <div class="stat-card">
+                    <i class="fas fa-file-alt stat-icon"></i>
+                    <div class="stat-number">${applicationStats.total}</div>
+                    <div class="stat-label">Total Applications</div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-clock stat-icon" style="color: var(--warning-color);"></i>
+                    <div class="stat-number">${applicationStats.pending}</div>
+                    <div class="stat-label">Pending Reviews</div>
+                </div>
+                <div class="stat-card">
+                    <i class="fas fa-check-circle stat-icon" style="color: var(--success-color);"></i>
+                    <div class="stat-number">${applicationStats.hrApproved}</div>
+                    <div class="stat-label">Approved by HR</div>
+                </div>
+            `;
+        }
+
+        function displayApplications(applications) {
+            const container = document.getElementById('applications-container');
+            
+            // Filter for applications that need TL review
+            const filteredApps = Object.entries(applications).filter(([id, app]) => {
+                const status = app.applicationStatus || '';
+                return status === 'PENDING_HR_REVIEW' || 
+                       status === 'HR_APPROVED' ||
+                       status === 'PENDING_TL_REVIEW' ||
+                       status === 'PENDING_PM_REVIEW' ||
+                       status === 'PENDING_HEAD_HR_REVIEW';
+            });
+            
+            if (filteredApps.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-inbox empty-icon"></i>
+                        <h3>No Applications to Review</h3>
+                        <p>There are no applications pending your review at this time.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            
+            filteredApps.forEach(([appId, appData]) => {
+                html += `
+                    <div class="application-card">
+                        <div class="application-header">
+                            <div class="applicant-info">
+                                <div class="applicant-name">
+                                    <i class="fas fa-user"></i>
+                                    ${appData.firstName || 'N/A'} ${appData.lastName || ''}
+                                </div>
+                                <div class="application-id">ID: ${appId}</div>
+                            </div>
+                            <div class="status-badge status-pending">
+                                <i class="fas fa-clock"></i>
+                                Pending TL Review
+                            </div>
+                        </div>
+                        
+                        <div class="application-details">
+                            <div class="detail-item">
+                                <div class="detail-label">
+                                    <i class="fas fa-envelope"></i>
+                                    Email Address
+                                </div>
+                                <div class="detail-value">${appData.email || 'N/A'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">
+                                    <i class="fas fa-phone"></i>
+                                    Mobile Number
+                                </div>
+                                <div class="detail-value">${appData.mobileNumber || 'N/A'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">
+                                    <i class="fas fa-briefcase"></i>
+                                    Position Applied
+                                </div>
+                                <div class="detail-value">${formatPosition(appData.position)}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">
+                                    <i class="fas fa-rupee-sign"></i>
+                                    Expected CTC
+                                </div>
+                                <div class="detail-value">₹${appData.expectedSalaryCTC || 'N/A'} LPA</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    Experience
+                                </div>
+                                <div class="detail-value">${formatExperience(appData.totalExperience)}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">
+                                    <i class="fas fa-graduation-cap"></i>
+                                    Education
+                                </div>
+                                <div class="detail-value">${formatEducation(appData.highestEducation)}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">
+                                    <i class="fas fa-clock"></i>
+                                    Notice Period
+                                </div>
+                                <div class="detail-value">${formatNoticePeriod(appData.noticePeriod)}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">
+                                    <i class="fas fa-code"></i>
+                                    Skills
+                                </div>
+                                <div class="detail-value">${formatSkills(appData.skills)}</div>
+                            </div>
+                        </div>
+                        
+                        ${appData.hrComments ? `
+                        <div class="hr-comments">
+                            <h4>
+                                <i class="fas fa-comment-dots"></i>
+                                HR Comments
+                            </h4>
+                            <p>${appData.hrComments}</p>
+                        </div>
+                        ` : ''}
+                        
+                        <div class="action-buttons">
+                            <a href="/camunda/app/tasklist/default/" target="_blank" class="camunda-link">
+                                <i class="fas fa-eye"></i>
+                                Review in Camunda Tasklist
+                            </a>
+                            <a href="/api/job-applications/${appId}/hr-summary" target="_blank" class="btn btn-secondary">
+                                <i class="fas fa-file-alt"></i>
+                                View Full Details
+                            </a>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function formatPosition(position) {
+            if (!position) return 'N/A';
+            const positions = {
+                'software-engineer': 'Software Engineer',
+                'senior-software-engineer': 'Senior Software Engineer',
+                'tech-lead': 'Tech Lead',
+                'product-manager': 'Product Manager'
+            };
+            return positions[position] || position;
+        }
+        
+        function formatExperience(experience) {
+            if (experience === undefined || experience === null) return 'N/A';
+            const years = parseInt(experience);
+            if (years === 0) return 'Fresher';
+            if (years === 1) return '1 Year';
+            return `${years} Years`;
+        }
+        
+        function formatEducation(education) {
+            if (!education) return 'N/A';
+            const educations = {
+                'btech-be': 'B.Tech/B.E',
+                'bca': 'BCA',
+                'mtech-me': 'M.Tech/M.E',
+                'mca': 'MCA'
+            };
+            return educations[education] || education;
+        }
+
+        function formatNoticePeriod(period) {
+            if (!period) return 'N/A';
+            const periods = {
+                'immediate': 'Immediate',
+                '15-days': '15 Days',
+                '1-month': '1 Month',
+                '2-months': '2 Months'
+            };
+            return periods[period] || period;
+        }
+
+        function formatSkills(skills) {
+            if (!skills || !Array.isArray(skills)) return 'N/A';
+            const skillMap = {
+                'java': 'Java',
+                'python': 'Python',
+                'javascript': 'JavaScript',
+                'spring-boot': 'Spring Boot'
+            };
+            return skills.map(skill => skillMap[skill] || skill).join(', ');
+        }
+
+        function updateLastUpdated() {
+            const now = new Date();
+            const timeString = now.toLocaleTimeString();
+            document.getElementById('last-updated').textContent = `Last updated: ${timeString}`;
+        }
+        
+        // Load applications on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadApplications();
+        });
+        
+        // Auto-refresh every 10 seconds
+        setInterval(loadApplications, 10000);
+        
+        // Add focus event listener to refresh when window gets focus
+        window.addEventListener('focus', () => {
+            loadApplications();
+        });
+    </script>
+</body>
+</html>

@@ -152,6 +152,21 @@ http://localhost:8082
 - **Description**: HR interface to view and manage applications
 - **Features**: View all applications, direct links to Camunda Tasklist for decision making
 
+## Team Lead Dashboard
+- **URL**: `http://localhost:8082/teamlead-dashboard.html`
+- **Description**: Team Lead interface to review applications approved by HR
+- **Features**: View HR-approved applications, technical assessment, Camunda Tasklist integration
+
+## Project Manager Dashboard
+- **URL**: `http://localhost:8082/projectmanager-dashboard.html`
+- **Description**: Project Manager interface to review applications approved by HR
+- **Features**: View HR-approved applications, project fit assessment, Camunda Tasklist integration
+
+## Head HR Dashboard
+- **URL**: `http://localhost:8082/headhr-dashboard.html`
+- **Description**: Head HR interface for final hiring decisions
+- **Features**: View applications approved by both TL and PM, see all previous approvals, make final decision
+
 ## Testing Workflow with Postman
 
 ### Complete Flow Test:
@@ -210,7 +225,21 @@ http://localhost:8082
    - HR can view applications at: `http://localhost:8082/hr-dashboard.html`
    - HR reviews applications in Camunda Tasklist: `http://localhost:8082/camunda/app/tasklist/default/`
    - HR makes Accept/Reject decisions with comments
-   - Process automatically handles acceptance or rejection workflows
+   - If HR accepts, process moves to parallel review
+
+6. **Team Lead & Project Manager Review** (Parallel):
+   - Team Lead views applications at: `http://localhost:8082/teamlead-dashboard.html`
+   - Project Manager views applications at: `http://localhost:8082/projectmanager-dashboard.html`
+   - Both review simultaneously in Camunda Tasklist
+   - Both must approve for application to proceed
+   - If either rejects, application is rejected
+
+7. **Head HR Final Review**:
+   - Head HR views applications at: `http://localhost:8082/headhr-dashboard.html`
+   - Reviews all previous approvals and comments
+   - Makes final hiring decision in Camunda Tasklist
+   - Can specify offer CTC
+   - Final accept/reject decision
 
 ## Error Responses
 

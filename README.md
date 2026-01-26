@@ -19,6 +19,9 @@ mvn spring-boot:run
 2. **Access the applications**:
 - **Frontend**: http://localhost:8082/
 - **HR Dashboard**: http://localhost:8082/hr-dashboard.html
+- **Team Lead Dashboard**: http://localhost:8082/teamlead-dashboard.html
+- **Project Manager Dashboard**: http://localhost:8082/projectmanager-dashboard.html
+- **Head HR Dashboard**: http://localhost:8082/headhr-dashboard.html
 - **Camunda Cockpit**: http://localhost:8082/camunda/app/cockpit/default/ (admin/admin)
 - **Camunda Tasklist**: http://localhost:8082/camunda/app/tasklist/default/ (admin/admin)
 - **API Health**: http://localhost:8082/api/job-applications/health
@@ -43,13 +46,21 @@ See `API_ENDPOINTS.md` for complete API documentation and testing examples.
 ## 🎯 Features
 
 - **Dynamic Workflow**: JSON-driven multi-step forms
-- **Camunda Integration**: Full BPMN workflow lifecycle with HR review process
-- **HR Dashboard**: Dedicated interface for HR to review applications
+- **Camunda Integration**: Full BPMN workflow lifecycle with multi-level approval process
+- **Multi-Level Approval System**:
+  - **HR Review**: Initial screening and approval
+  - **Parallel Review**: Team Lead and Project Manager review simultaneously
+  - **Head HR Final Decision**: Final authority for hiring decisions
+- **Role-Based Dashboards**: 
+  - HR Dashboard for initial screening
+  - Team Lead Dashboard for technical review
+  - Project Manager Dashboard for project fit assessment
+  - Head HR Dashboard for final hiring decisions
 - **Indian Job Market**: Tailored for Indian recruitment process
 - **Responsive UI**: Works on desktop and mobile
 - **Real-time Validation**: Client and server-side validation
 - **Process Monitoring**: Camunda Cockpit integration
-- **Decision Workflow**: Accept/Reject workflow with automated notifications
+- **Parallel Gateway Logic**: Both TL and PM must approve; rejection by either stops the process
 
 ## 🏗️ Architecture
 
@@ -57,6 +68,43 @@ See `API_ENDPOINTS.md` for complete API documentation and testing examples.
 - **Frontend**: HTML5 + CSS3 + Vanilla JavaScript
 - **Database**: H2 (development) / PostgreSQL (production ready)
 - **Process Engine**: Camunda BPM embedded
+
+## 🔄 Workflow Process
+
+The application follows a comprehensive multi-level approval workflow:
+
+1. **Applicant Submission** (3 Steps)
+   - Personal Information
+   - Job Preferences
+   - Experience & Education
+
+2. **Data Collection**
+   - System collects and formats all applicant data
+
+3. **HR Review** (First Gate)
+   - HR reviews application in dashboard
+   - Makes Accept/Reject decision in Camunda Tasklist
+   - If **Rejected**: Process ends with rejection notification
+   - If **Accepted**: Moves to parallel review
+
+4. **Parallel Review** (Second Gate)
+   - **Team Lead Review**: Technical assessment
+   - **Project Manager Review**: Project fit assessment
+   - Both reviews happen simultaneously
+   - If **Either Rejects**: Process ends with rejection notification
+   - If **Both Accept**: Moves to Head HR
+
+5. **Head HR Final Review** (Final Gate)
+   - Reviews all previous approvals and comments
+   - Makes final hiring decision
+   - Can specify offer CTC
+   - If **Accepted**: Application stored, candidate hired
+   - If **Rejected**: Process ends with rejection notification
+
+### Approval Logic
+- **HR Rejection**: Immediate rejection, no further reviews
+- **TL/PM Rejection**: If either Team Lead OR Project Manager rejects, application is rejected
+- **Head HR**: Final authority - can accept or reject even after all approvals
 
 ## 📁 Project Structure
 
