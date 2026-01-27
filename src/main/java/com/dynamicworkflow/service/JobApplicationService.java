@@ -5,14 +5,17 @@ import com.dynamicworkflow.model.WorkflowStep;
 import org.camunda.bpm.engine.ProcessEngine;
 import org.camunda.bpm.engine.RuntimeService;
 import org.camunda.bpm.engine.TaskService;
+import org.camunda.bpm.engine.HistoryService;
 import org.camunda.bpm.engine.runtime.ProcessInstance;
 import org.camunda.bpm.engine.task.Task;
+import org.camunda.bpm.engine.history.HistoricProcessInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -25,6 +28,7 @@ public class JobApplicationService {
     
     private final RuntimeService runtimeService;
     private final TaskService taskService;
+    private final HistoryService historyService;
     private final WorkflowDefinitionService workflowDefinitionService;
     private final ValidationService validationService;
     
@@ -37,6 +41,7 @@ public class JobApplicationService {
                                ValidationService validationService) {
         this.runtimeService = processEngine.getRuntimeService();
         this.taskService = processEngine.getTaskService();
+        this.historyService = processEngine.getHistoryService();
         this.workflowDefinitionService = workflowDefinitionService;
         this.validationService = validationService;
     }
@@ -139,12 +144,12 @@ public class JobApplicationService {
             String status = "IN_PROGRESS";
             
             if (workflowDefinitionService.isLastStep(currentStepId)) {
-                status = "COMPLETED";
+                status = "PENDING_HR_REVIEW";
                 nextStepId = null;
-                applicationData.put("completionTimestamp", LocalDateTime.now().toString());
-                applicationData.put("applicationStatus", "COMPLETED");
-                applicationStatusStore.put(applicationId, "COMPLETED");
-                logger.info("Application {} completed", applicationId);
+                applicationData.put("submissionTimestamp", LocalDateTime.now().toString());
+                applicationData.put("applicationStatus", "PENDING_HR_REVIEW");
+                applicationStatusStore.put(applicationId, "PENDING_HR_REVIEW");
+                logger.info("Application {} submitted for HR review", applicationId);
             } else {
                 Optional<WorkflowStep> nextStep = workflowDefinitionService.getNextStep(currentStepId);
                 if (nextStep.isPresent()) {
@@ -244,11 +249,196 @@ public class JobApplicationService {
     
     // Add method to get all applications for debugging
     public Map<String, Object> getAllApplications() {
+        // Sync with Camunda process instances to get latest status
+        syncApplicationStatusWithCamunda();
+        
         Map<String, Object> result = new HashMap<>();
         result.put("totalApplications", applicationDataStore.size());
         result.put("applications", applicationDataStore);
         result.put("statuses", applicationStatusStore);
         return result;
+    }
+    
+    // Method to sync application status with Camunda process instances
+    private void syncApplicationStatusWithCamunda() {
+        try {
+            // Get all process instances for our workflow (both active and ended)
+            List<ProcessInstance> activeProcesses = runtimeService.createProcessInstanceQuery()
+                .processDefinitionKey("job-recruitment-workflow-india")
+                .active()
+                .list();
+            
+            // Sync active processes
+            for (ProcessInstance processInstance : activeProcesses) {
+                String applicationId = processInstance.getBusinessKey();
+                if (applicationId != null && applicationDataStore.containsKey(applicationId)) {
+                    try {
+                        // Get process variables
+                        Map<String, Object> processVariables = runtimeService.getVariables(processInstance.getId());
+                        Map<String, Object> appData = applicationDataStore.get(applicationId);
+                        
+                        // Sync HR decision
+                        if (processVariables.containsKey("hrDecision")) {
+                            appData.put("hrDecision", processVariables.get("hrDecision"));
+                            appData.put("hrComments", processVariables.get("hrComments"));
+                            appData.put("interviewRequired", processVariables.get("interviewRequired"));
+                            logger.debug("Synced HR decision for application {}", applicationId);
+                        }
+                        
+                        // Sync Team Lead decision
+                        if (processVariables.containsKey("tlDecision")) {
+                            appData.put("tlDecision", processVariables.get("tlDecision"));
+                            appData.put("tlComments", processVariables.get("tlComments"));
+                            logger.debug("Synced TL decision for application {}", applicationId);
+                        }
+                        
+                        // Sync Project Manager decision
+                        if (processVariables.containsKey("pmDecision")) {
+                            appData.put("pmDecision", processVariables.get("pmDecision"));
+                            appData.put("pmComments", processVariables.get("pmComments"));
+                            logger.debug("Synced PM decision for application {}", applicationId);
+                        }
+                        
+                        // Sync Head HR decision
+                        if (processVariables.containsKey("headHRDecision")) {
+                            appData.put("headHRDecision", processVariables.get("headHRDecision"));
+                            appData.put("headHRComments", processVariables.get("headHRComments"));
+                            appData.put("offerCTC", processVariables.get("offerCTC"));
+                            logger.debug("Synced Head HR decision for application {}", applicationId);
+                        }
+                        
+                        // Update status based on current task
+                        Task currentTask = taskService.createTaskQuery()
+                            .processInstanceId(processInstance.getId())
+                            .active()
+                            .singleResult();
+                        
+                        if (currentTask != null) {
+                            String taskName = currentTask.getName();
+                            String newStatus = appData.get("applicationStatus").toString();
+                            
+                            // Update status based on current task
+                            if (taskName.contains("HR Application Review")) {
+                                newStatus = "PENDING_HR_REVIEW";
+                            } else if (taskName.contains("Team Lead Review")) {
+                                newStatus = "PENDING_TL_REVIEW";
+                            } else if (taskName.contains("Project Manager Review")) {
+                                newStatus = "PENDING_PM_REVIEW";
+                            } else if (taskName.contains("Head HR Final Review")) {
+                                newStatus = "PENDING_HEAD_HR_REVIEW";
+                            }
+                            
+                            appData.put("applicationStatus", newStatus);
+                            applicationStatusStore.put(applicationId, newStatus);
+                            logger.debug("Updated application {} status to: {} (task: {})", 
+                                       applicationId, newStatus, taskName);
+                        }
+                        
+                        appData.put("lastUpdatedTimestamp", LocalDateTime.now().toString());
+                        applicationDataStore.put(applicationId, appData);
+                        
+                    } catch (Exception e) {
+                        logger.warn("Failed to sync process variables for application {}: {}", 
+                                  applicationId, e.getMessage());
+                    }
+                }
+            }
+            
+            // Also check for ended processes using HistoryService
+            List<HistoricProcessInstance> endedProcesses = historyService.createHistoricProcessInstanceQuery()
+                .processDefinitionKey("job-recruitment-workflow-india")
+                .finished()
+                .list();
+            
+            for (HistoricProcessInstance processInstance : endedProcesses) {
+                String applicationId = processInstance.getBusinessKey();
+                if (applicationId != null && applicationDataStore.containsKey(applicationId)) {
+                    try {
+                        Map<String, Object> processVariables = historyService.createHistoricVariableInstanceQuery()
+                            .processInstanceId(processInstance.getId())
+                            .list()
+                            .stream()
+                            .collect(java.util.stream.Collectors.toMap(
+                                v -> v.getName(),
+                                v -> v.getValue()
+                            ));
+                        
+                        Map<String, Object> appData = applicationDataStore.get(applicationId);
+                        
+                        // Sync all decisions
+                        if (processVariables.containsKey("hrDecision")) {
+                            appData.put("hrDecision", processVariables.get("hrDecision"));
+                            appData.put("hrComments", processVariables.get("hrComments"));
+                        }
+                        if (processVariables.containsKey("tlDecision")) {
+                            appData.put("tlDecision", processVariables.get("tlDecision"));
+                            appData.put("tlComments", processVariables.get("tlComments"));
+                        }
+                        if (processVariables.containsKey("pmDecision")) {
+                            appData.put("pmDecision", processVariables.get("pmDecision"));
+                            appData.put("pmComments", processVariables.get("pmComments"));
+                        }
+                        if (processVariables.containsKey("headHRDecision")) {
+                            appData.put("headHRDecision", processVariables.get("headHRDecision"));
+                            appData.put("headHRComments", processVariables.get("headHRComments"));
+                            appData.put("offerCTC", processVariables.get("offerCTC"));
+                        }
+                        
+                        // Determine final status
+                        String finalStatus = "COMPLETED";
+                        if (processVariables.containsKey("headHRDecision")) {
+                            String headHRDecision = (String) processVariables.get("headHRDecision");
+                            finalStatus = "accept".equals(headHRDecision) ? "ACCEPTED" : "REJECTED_BY_HEAD_HR";
+                        } else if (processVariables.containsKey("tlDecision") || processVariables.containsKey("pmDecision")) {
+                            String tlDecision = (String) processVariables.get("tlDecision");
+                            String pmDecision = (String) processVariables.get("pmDecision");
+                            if ("reject".equals(tlDecision) || "reject".equals(pmDecision)) {
+                                finalStatus = "REJECTED_BY_TL_PM";
+                            }
+                        } else if (processVariables.containsKey("hrDecision")) {
+                            String hrDecision = (String) processVariables.get("hrDecision");
+                            if ("reject".equals(hrDecision)) {
+                                finalStatus = "REJECTED_BY_HR";
+                            }
+                        }
+                        
+                        appData.put("applicationStatus", finalStatus);
+                        applicationStatusStore.put(applicationId, finalStatus);
+                        appData.put("lastUpdatedTimestamp", LocalDateTime.now().toString());
+                        
+                        logger.info("Updated completed application {} to final status: {}", applicationId, finalStatus);
+                        
+                    } catch (Exception e) {
+                        logger.warn("Failed to sync ended process for application {}: {}", 
+                                  applicationId, e.getMessage());
+                    }
+                }
+            }
+            
+        } catch (Exception e) {
+            logger.warn("Failed to sync application status with Camunda: {}", e.getMessage());
+        }
+    }
+    
+    // Method to manually update application status (can be called by Camunda delegates)
+    public void updateApplicationStatus(String applicationId, String status, Map<String, Object> additionalData) {
+        try {
+            if (applicationDataStore.containsKey(applicationId)) {
+                applicationStatusStore.put(applicationId, status);
+                Map<String, Object> appData = applicationDataStore.get(applicationId);
+                appData.put("applicationStatus", status);
+                appData.put("lastUpdatedTimestamp", LocalDateTime.now().toString());
+                
+                // Add any additional data
+                if (additionalData != null) {
+                    appData.putAll(additionalData);
+                }
+                
+                logger.info("Manually updated application {} status to: {}", applicationId, status);
+            }
+        } catch (Exception e) {
+            logger.error("Failed to update application status for {}: {}", applicationId, e.getMessage());
+        }
     }
     
     private String generateApplicationId() {

@@ -8,70 +8,265 @@
     </bpmn:startEvent>
     
     <!-- Step 1: Personal Information -->
-    <bpmn:userTask id="PersonalInfoTask" name="Personal Information" camunda:formKey="personal-info">
+    <bpmn:userTask id="PersonalInfoTask" name="Personal Information">
       <bpmn:documentation>Collect basic personal details including name, email, mobile, date of birth, and gender</bpmn:documentation>
       <bpmn:incoming>Flow_1</bpmn:incoming>
       <bpmn:outgoing>Flow_2</bpmn:outgoing>
     </bpmn:userTask>
     
     <!-- Step 2: Job Preferences -->
-    <bpmn:userTask id="JobPreferencesTask" name="Job Preferences" camunda:formKey="job-preferences">
+    <bpmn:userTask id="JobPreferencesTask" name="Job Preferences">
       <bpmn:documentation>Collect job preferences including position, salary expectations, and notice period</bpmn:documentation>
       <bpmn:incoming>Flow_2</bpmn:incoming>
       <bpmn:outgoing>Flow_3</bpmn:outgoing>
     </bpmn:userTask>
     
     <!-- Step 3: Experience & Education -->
-    <bpmn:userTask id="ExperienceEducationTask" name="Experience &amp; Education" camunda:formKey="experience-education">
+    <bpmn:userTask id="ExperienceEducationTask" name="Experience &amp; Education">
       <bpmn:documentation>Collect professional experience and educational background including skills</bpmn:documentation>
       <bpmn:incoming>Flow_3</bpmn:incoming>
       <bpmn:outgoing>Flow_4</bpmn:outgoing>
     </bpmn:userTask>
     
-    <!-- Validate Application -->
-    <bpmn:serviceTask id="ValidateApplicationTask" name="Validate Application" camunda:class="com.dynamicworkflow.delegate.ValidationDelegate">
-      <bpmn:documentation>Validate all application data and business rules</bpmn:documentation>
+    <!-- Collect Applicant Data -->
+    <bpmn:serviceTask id="CollectApplicantDataTask" name="Collect Applicant Data" camunda:class="com.dynamicworkflow.delegate.CollectApplicantDataDelegate">
+      <bpmn:documentation>Collect and format all applicant data for HR review</bpmn:documentation>
       <bpmn:incoming>Flow_4</bpmn:incoming>
       <bpmn:outgoing>Flow_5</bpmn:outgoing>
     </bpmn:serviceTask>
     
-    <!-- Validation Gateway -->
-    <bpmn:exclusiveGateway id="ValidationGateway" name="Application Valid?">
+    <!-- HR Review Task -->
+    <bpmn:userTask id="HRReviewTask" name="HR Application Review" camunda:candidateGroups="hr,managers">
+      <bpmn:documentation>Review job application and make selection decision.
+
+Applicant: ${firstName} ${lastName}
+Email: ${email}
+Position: ${position}
+Experience: ${totalExperience} years
+Expected CTC: ₹${expectedSalaryCTC} LPA
+
+Please review the complete application data and make your decision.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <camunda:formData>
+          <camunda:formField id="hrDecision" label="Decision" type="enum">
+            <camunda:value id="accept" name="Accept Application" />
+            <camunda:value id="reject" name="Reject Application" />
+          </camunda:formField>
+          <camunda:formField id="hrComments" label="HR Comments" type="string" />
+          <camunda:formField id="interviewRequired" label="Interview Required?" type="boolean" defaultValue="true" />
+        </camunda:formData>
+      </bpmn:extensionElements>
       <bpmn:incoming>Flow_5</bpmn:incoming>
       <bpmn:outgoing>Flow_6</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- HR Decision Gateway -->
+    <bpmn:exclusiveGateway id="HRDecisionGateway" name="HR Approved?">
+      <bpmn:incoming>Flow_6</bpmn:incoming>
       <bpmn:outgoing>Flow_7</bpmn:outgoing>
+      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Parallel Gateway - Split for TL and PM Review -->
+    <bpmn:parallelGateway id="ParallelReviewGateway" name="Parallel Review">
+      <bpmn:incoming>Flow_7</bpmn:incoming>
+      <bpmn:outgoing>Flow_TL</bpmn:outgoing>
+      <bpmn:outgoing>Flow_PM</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    
+    <!-- Team Lead Review Task -->
+    <bpmn:userTask id="TeamLeadReviewTask" name="Team Lead Review" camunda:candidateGroups="teamlead">
+      <bpmn:documentation>Team Lead reviews the application.
+
+Applicant: ${firstName} ${lastName}
+Email: ${email}
+Position: ${position}
+Experience: ${totalExperience} years
+Expected CTC: ₹${expectedSalaryCTC} LPA
+
+HR Comments: ${hrComments}
+
+Please review and make your decision.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <camunda:formData>
+          <camunda:formField id="tlDecision" label="Team Lead Decision" type="enum">
+            <camunda:value id="accept" name="Accept" />
+            <camunda:value id="reject" name="Reject" />
+          </camunda:formField>
+          <camunda:formField id="tlComments" label="Team Lead Comments" type="string" />
+        </camunda:formData>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_TL</bpmn:incoming>
+      <bpmn:outgoing>Flow_TL_Complete</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Project Manager Review Task -->
+    <bpmn:userTask id="ProjectManagerReviewTask" name="Project Manager Review" camunda:candidateGroups="projectmanager">
+      <bpmn:documentation>Project Manager reviews the application.
+
+Applicant: ${firstName} ${lastName}
+Email: ${email}
+Position: ${position}
+Experience: ${totalExperience} years
+Expected CTC: ₹${expectedSalaryCTC} LPA
+
+HR Comments: ${hrComments}
+
+Please review and make your decision.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <camunda:formData>
+          <camunda:formField id="pmDecision" label="Project Manager Decision" type="enum">
+            <camunda:value id="accept" name="Accept" />
+            <camunda:value id="reject" name="Reject" />
+          </camunda:formField>
+          <camunda:formField id="pmComments" label="Project Manager Comments" type="string" />
+        </camunda:formData>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_PM</bpmn:incoming>
+      <bpmn:outgoing>Flow_PM_Complete</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Parallel Gateway - Join after TL and PM Review -->
+    <bpmn:parallelGateway id="ParallelJoinGateway" name="Join Reviews">
+      <bpmn:incoming>Flow_TL_Complete</bpmn:incoming>
+      <bpmn:incoming>Flow_PM_Complete</bpmn:incoming>
+      <bpmn:outgoing>Flow_CheckTLPM</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    
+    <!-- Check TL/PM Decision Gateway -->
+    <bpmn:exclusiveGateway id="TLPMDecisionGateway" name="Both TL &amp; PM Approved?">
+      <bpmn:incoming>Flow_CheckTLPM</bpmn:incoming>
+      <bpmn:outgoing>Flow_TLPMApproved</bpmn:outgoing>
+      <bpmn:outgoing>Flow_TLPMRejected</bpmn:outgoing>
+    </bpmn:exclusiveGateway>
+    
+    <!-- Head HR Review Task -->
+    <bpmn:userTask id="HeadHRReviewTask" name="Head HR Final Review" camunda:candidateGroups="headhr">
+      <bpmn:documentation>Head HR makes the final decision.
+
+Applicant: ${firstName} ${lastName}
+Email: ${email}
+Position: ${position}
+Experience: ${totalExperience} years
+Expected CTC: ₹${expectedSalaryCTC} LPA
+
+HR Comments: ${hrComments}
+Team Lead Decision: ${tlDecision} - ${tlComments}
+Project Manager Decision: ${pmDecision} - ${pmComments}
+
+Please make the final decision.</bpmn:documentation>
+      <bpmn:extensionElements>
+        <camunda:formData>
+          <camunda:formField id="headHRDecision" label="Head HR Final Decision" type="enum">
+            <camunda:value id="accept" name="Accept - Hire Candidate" />
+            <camunda:value id="reject" name="Reject Application" />
+          </camunda:formField>
+          <camunda:formField id="headHRComments" label="Head HR Comments" type="string" />
+          <camunda:formField id="offerCTC" label="Offer CTC (in Lakhs)" type="string" />
+        </camunda:formData>
+      </bpmn:extensionElements>
+      <bpmn:incoming>Flow_TLPMApproved</bpmn:incoming>
+      <bpmn:outgoing>Flow_HeadHRComplete</bpmn:outgoing>
+    </bpmn:userTask>
+    
+    <!-- Head HR Decision Gateway -->
+    <bpmn:exclusiveGateway id="HeadHRDecisionGateway" name="Head HR Approved?">
+      <bpmn:incoming>Flow_HeadHRComplete</bpmn:incoming>
+      <bpmn:outgoing>Flow_FinalAccept</bpmn:outgoing>
+      <bpmn:outgoing>Flow_FinalReject</bpmn:outgoing>
     </bpmn:exclusiveGateway>
     
     <!-- Store Application Data -->
     <bpmn:serviceTask id="StoreApplicationTask" name="Store Application Data" camunda:class="com.dynamicworkflow.delegate.StoreApplicationDelegate">
-      <bpmn:documentation>Store complete application data and update status to COMPLETED</bpmn:documentation>
-      <bpmn:incoming>Flow_6</bpmn:incoming>
-      <bpmn:outgoing>Flow_8</bpmn:outgoing>
+      <bpmn:documentation>Store complete application data and update status to ACCEPTED</bpmn:documentation>
+      <bpmn:incoming>Flow_FinalAccept</bpmn:incoming>
+      <bpmn:outgoing>Flow_9</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Send Rejection Notification (HR Rejected) -->
+    <bpmn:serviceTask id="SendRejectionTask" name="Send HR Rejection" camunda:class="com.dynamicworkflow.delegate.SendRejectionDelegate">
+      <bpmn:documentation>Send rejection notification - rejected by HR</bpmn:documentation>
+      <bpmn:incoming>Flow_8</bpmn:incoming>
+      <bpmn:outgoing>Flow_10</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Send Rejection Notification (TL/PM Rejected) -->
+    <bpmn:serviceTask id="SendTLPMRejectionTask" name="Send TL/PM Rejection" camunda:class="com.dynamicworkflow.delegate.SendRejectionDelegate">
+      <bpmn:documentation>Send rejection notification - rejected by TL or PM</bpmn:documentation>
+      <bpmn:incoming>Flow_TLPMRejected</bpmn:incoming>
+      <bpmn:outgoing>Flow_11</bpmn:outgoing>
+    </bpmn:serviceTask>
+    
+    <!-- Send Rejection Notification (Head HR Rejected) -->
+    <bpmn:serviceTask id="SendHeadHRRejectionTask" name="Send Head HR Rejection" camunda:class="com.dynamicworkflow.delegate.SendRejectionDelegate">
+      <bpmn:documentation>Send rejection notification - rejected by Head HR</bpmn:documentation>
+      <bpmn:incoming>Flow_FinalReject</bpmn:incoming>
+      <bpmn:outgoing>Flow_12</bpmn:outgoing>
     </bpmn:serviceTask>
     
     <!-- Success End Event -->
-    <bpmn:endEvent id="SuccessEndEvent" name="Application Submitted Successfully">
-      <bpmn:incoming>Flow_8</bpmn:incoming>
+    <bpmn:endEvent id="SuccessEndEvent" name="Application Accepted">
+      <bpmn:incoming>Flow_9</bpmn:incoming>
     </bpmn:endEvent>
     
-    <!-- Error End Event -->
-    <bpmn:endEvent id="ErrorEndEvent" name="Application Validation Failed">
-      <bpmn:incoming>Flow_7</bpmn:incoming>
+    <!-- Rejection End Events -->
+    <bpmn:endEvent id="RejectionEndEvent" name="Rejected by HR">
+      <bpmn:incoming>Flow_10</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <bpmn:endEvent id="TLPMRejectionEndEvent" name="Rejected by TL/PM">
+      <bpmn:incoming>Flow_11</bpmn:incoming>
+    </bpmn:endEvent>
+    
+    <bpmn:endEvent id="HeadHRRejectionEndEvent" name="Rejected by Head HR">
+      <bpmn:incoming>Flow_12</bpmn:incoming>
     </bpmn:endEvent>
     
     <!-- Sequence Flows -->
     <bpmn:sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="PersonalInfoTask" />
     <bpmn:sequenceFlow id="Flow_2" sourceRef="PersonalInfoTask" targetRef="JobPreferencesTask" />
     <bpmn:sequenceFlow id="Flow_3" sourceRef="JobPreferencesTask" targetRef="ExperienceEducationTask" />
-    <bpmn:sequenceFlow id="Flow_4" sourceRef="ExperienceEducationTask" targetRef="ValidateApplicationTask" />
-    <bpmn:sequenceFlow id="Flow_5" sourceRef="ValidateApplicationTask" targetRef="ValidationGateway" />
-    <bpmn:sequenceFlow id="Flow_6" name="Valid" sourceRef="ValidationGateway" targetRef="StoreApplicationTask">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${validationResult == true}</bpmn:conditionExpression>
+    <bpmn:sequenceFlow id="Flow_4" sourceRef="ExperienceEducationTask" targetRef="CollectApplicantDataTask" />
+    <bpmn:sequenceFlow id="Flow_5" sourceRef="CollectApplicantDataTask" targetRef="HRReviewTask" />
+    <bpmn:sequenceFlow id="Flow_6" sourceRef="HRReviewTask" targetRef="HRDecisionGateway" />
+    
+    <!-- HR Decision Flows -->
+    <bpmn:sequenceFlow id="Flow_7" name="HR Accept" sourceRef="HRDecisionGateway" targetRef="ParallelReviewGateway">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${hrDecision == 'accept'}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_7" name="Invalid" sourceRef="ValidationGateway" targetRef="ErrorEndEvent">
-      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${validationResult == false}</bpmn:conditionExpression>
+    <bpmn:sequenceFlow id="Flow_8" name="HR Reject" sourceRef="HRDecisionGateway" targetRef="SendRejectionTask">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${hrDecision == 'reject'}</bpmn:conditionExpression>
     </bpmn:sequenceFlow>
-    <bpmn:sequenceFlow id="Flow_8" sourceRef="StoreApplicationTask" targetRef="SuccessEndEvent" />
+    
+    <!-- Parallel Gateway Flows -->
+    <bpmn:sequenceFlow id="Flow_TL" sourceRef="ParallelReviewGateway" targetRef="TeamLeadReviewTask" />
+    <bpmn:sequenceFlow id="Flow_PM" sourceRef="ParallelReviewGateway" targetRef="ProjectManagerReviewTask" />
+    <bpmn:sequenceFlow id="Flow_TL_Complete" sourceRef="TeamLeadReviewTask" targetRef="ParallelJoinGateway" />
+    <bpmn:sequenceFlow id="Flow_PM_Complete" sourceRef="ProjectManagerReviewTask" targetRef="ParallelJoinGateway" />
+    <bpmn:sequenceFlow id="Flow_CheckTLPM" sourceRef="ParallelJoinGateway" targetRef="TLPMDecisionGateway" />
+    
+    <!-- TL/PM Decision Flows -->
+    <bpmn:sequenceFlow id="Flow_TLPMApproved" name="Both Approved" sourceRef="TLPMDecisionGateway" targetRef="HeadHRReviewTask">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${tlDecision == 'accept' &amp;&amp; pmDecision == 'accept'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_TLPMRejected" name="Any Rejected" sourceRef="TLPMDecisionGateway" targetRef="SendTLPMRejectionTask">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${tlDecision == 'reject' || pmDecision == 'reject'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    
+    <!-- Head HR Flows -->
+    <bpmn:sequenceFlow id="Flow_HeadHRComplete" sourceRef="HeadHRReviewTask" targetRef="HeadHRDecisionGateway" />
+    <bpmn:sequenceFlow id="Flow_FinalAccept" name="Final Accept" sourceRef="HeadHRDecisionGateway" targetRef="StoreApplicationTask">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${headHRDecision == 'accept'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    <bpmn:sequenceFlow id="Flow_FinalReject" name="Final Reject" sourceRef="HeadHRDecisionGateway" targetRef="SendHeadHRRejectionTask">
+      <bpmn:conditionExpression xsi:type="bpmn:tFormalExpression" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">${headHRDecision == 'reject'}</bpmn:conditionExpression>
+    </bpmn:sequenceFlow>
+    
+    <!-- End Flows -->
+    <bpmn:sequenceFlow id="Flow_9" sourceRef="StoreApplicationTask" targetRef="SuccessEndEvent" />
+    <bpmn:sequenceFlow id="Flow_10" sourceRef="SendRejectionTask" targetRef="RejectionEndEvent" />
+    <bpmn:sequenceFlow id="Flow_11" sourceRef="SendTLPMRejectionTask" targetRef="TLPMRejectionEndEvent" />
+    <bpmn:sequenceFlow id="Flow_12" sourceRef="SendHeadHRRejectionTask" targetRef="HeadHRRejectionEndEvent" />
     
   </bpmn:process>
   
@@ -81,106 +276,276 @@
       
       <!-- Start Event -->
       <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
-        <dc:Bounds x="179" y="99" width="36" height="36" />
+        <dc:Bounds x="152" y="212" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="158" y="142" width="78" height="27" />
+          <dc:Bounds x="131" y="255" width="78" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       
       <!-- Personal Info Task -->
       <bpmndi:BPMNShape id="PersonalInfo_Shape" bpmnElement="PersonalInfoTask">
-        <dc:Bounds x="270" y="77" width="100" height="80" />
+        <dc:Bounds x="240" y="190" width="100" height="80" />
       </bpmndi:BPMNShape>
       
       <!-- Job Preferences Task -->
       <bpmndi:BPMNShape id="JobPreferences_Shape" bpmnElement="JobPreferencesTask">
-        <dc:Bounds x="420" y="77" width="100" height="80" />
+        <dc:Bounds x="390" y="190" width="100" height="80" />
       </bpmndi:BPMNShape>
       
       <!-- Experience Task -->
       <bpmndi:BPMNShape id="Experience_Shape" bpmnElement="ExperienceEducationTask">
-        <dc:Bounds x="570" y="77" width="100" height="80" />
+        <dc:Bounds x="540" y="190" width="100" height="80" />
       </bpmndi:BPMNShape>
       
-      <!-- Validate Application -->
-      <bpmndi:BPMNShape id="ValidateApplication_Shape" bpmnElement="ValidateApplicationTask">
-        <dc:Bounds x="720" y="77" width="100" height="80" />
+      <!-- Collect Applicant Data -->
+      <bpmndi:BPMNShape id="CollectData_Shape" bpmnElement="CollectApplicantDataTask">
+        <dc:Bounds x="690" y="190" width="100" height="80" />
       </bpmndi:BPMNShape>
       
-      <!-- Validation Gateway -->
-      <bpmndi:BPMNShape id="ValidationGateway_Shape" bpmnElement="ValidationGateway" isMarkerVisible="true">
-        <dc:Bounds x="875" y="92" width="50" height="50" />
+      <!-- HR Review Task -->
+      <bpmndi:BPMNShape id="HRReview_Shape" bpmnElement="HRReviewTask">
+        <dc:Bounds x="840" y="190" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- HR Decision Gateway -->
+      <bpmndi:BPMNShape id="HRDecisionGateway_Shape" bpmnElement="HRDecisionGateway" isMarkerVisible="true">
+        <dc:Bounds x="995" y="205" width="50" height="50" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="858" y="62" width="84" height="14" />
+          <dc:Bounds x="978" y="175" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <!-- Parallel Gateway Split -->
+      <bpmndi:BPMNShape id="ParallelReviewGateway_Shape" bpmnElement="ParallelReviewGateway" isMarkerVisible="true">
+        <dc:Bounds x="1105" y="205" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1088" y="262" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <!-- Team Lead Review -->
+      <bpmndi:BPMNShape id="TeamLeadReview_Shape" bpmnElement="TeamLeadReviewTask">
+        <dc:Bounds x="1210" y="100" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- Project Manager Review -->
+      <bpmndi:BPMNShape id="ProjectManagerReview_Shape" bpmnElement="ProjectManagerReviewTask">
+        <dc:Bounds x="1210" y="280" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- Parallel Gateway Join -->
+      <bpmndi:BPMNShape id="ParallelJoinGateway_Shape" bpmnElement="ParallelJoinGateway" isMarkerVisible="true">
+        <dc:Bounds x="1365" y="205" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1348" y="262" width="84" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <!-- TL/PM Decision Gateway -->
+      <bpmndi:BPMNShape id="TLPMDecisionGateway_Shape" bpmnElement="TLPMDecisionGateway" isMarkerVisible="true">
+        <dc:Bounds x="1475" y="205" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1458" y="175" width="84" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <!-- Head HR Review -->
+      <bpmndi:BPMNShape id="HeadHRReview_Shape" bpmnElement="HeadHRReviewTask">
+        <dc:Bounds x="1585" y="190" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- Head HR Decision Gateway -->
+      <bpmndi:BPMNShape id="HeadHRDecisionGateway_Shape" bpmnElement="HeadHRDecisionGateway" isMarkerVisible="true">
+        <dc:Bounds x="1745" y="205" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1728" y="175" width="84" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       
       <!-- Store Application -->
       <bpmndi:BPMNShape id="StoreApplication_Shape" bpmnElement="StoreApplicationTask">
-        <dc:Bounds x="980" y="77" width="100" height="80" />
+        <dc:Bounds x="1855" y="190" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- Send HR Rejection -->
+      <bpmndi:BPMNShape id="SendRejection_Shape" bpmnElement="SendRejectionTask">
+        <dc:Bounds x="1105" y="380" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- Send TL/PM Rejection -->
+      <bpmndi:BPMNShape id="SendTLPMRejection_Shape" bpmnElement="SendTLPMRejectionTask">
+        <dc:Bounds x="1475" y="380" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      
+      <!-- Send Head HR Rejection -->
+      <bpmndi:BPMNShape id="SendHeadHRRejection_Shape" bpmnElement="SendHeadHRRejectionTask">
+        <dc:Bounds x="1745" y="380" width="100" height="80" />
       </bpmndi:BPMNShape>
       
       <!-- Success End Event -->
       <bpmndi:BPMNShape id="SuccessEnd_Shape" bpmnElement="SuccessEndEvent">
-        <dc:Bounds x="1132" y="99" width="36" height="36" />
+        <dc:Bounds x="2017" y="212" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="1111" y="142" width="78" height="27" />
+          <dc:Bounds x="1996" y="255" width="78" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       
-      <!-- Error End Event -->
-      <bpmndi:BPMNShape id="ErrorEnd_Shape" bpmnElement="ErrorEndEvent">
-        <dc:Bounds x="882" y="202" width="36" height="36" />
+      <!-- Rejection End Events -->
+      <bpmndi:BPMNShape id="RejectionEnd_Shape" bpmnElement="RejectionEndEvent">
+        <dc:Bounds x="1137" y="512" width="36" height="36" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="861" y="245" width="78" height="27" />
+          <dc:Bounds x="1116" y="555" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <bpmndi:BPMNShape id="TLPMRejectionEnd_Shape" bpmnElement="TLPMRejectionEndEvent">
+        <dc:Bounds x="1507" y="512" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1486" y="555" width="78" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      
+      <bpmndi:BPMNShape id="HeadHRRejectionEnd_Shape" bpmnElement="HeadHRRejectionEndEvent">
+        <dc:Bounds x="1777" y="512" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1756" y="555" width="78" height="27" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNShape>
       
       <!-- Sequence Flow Edges -->
       <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
-        <di:waypoint x="215" y="117" />
-        <di:waypoint x="270" y="117" />
+        <di:waypoint x="188" y="230" />
+        <di:waypoint x="240" y="230" />
       </bpmndi:BPMNEdge>
       
       <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
-        <di:waypoint x="370" y="117" />
-        <di:waypoint x="420" y="117" />
+        <di:waypoint x="340" y="230" />
+        <di:waypoint x="390" y="230" />
       </bpmndi:BPMNEdge>
       
       <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
-        <di:waypoint x="520" y="117" />
-        <di:waypoint x="570" y="117" />
+        <di:waypoint x="490" y="230" />
+        <di:waypoint x="540" y="230" />
       </bpmndi:BPMNEdge>
       
       <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
-        <di:waypoint x="670" y="117" />
-        <di:waypoint x="720" y="117" />
+        <di:waypoint x="640" y="230" />
+        <di:waypoint x="690" y="230" />
       </bpmndi:BPMNEdge>
       
       <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
-        <di:waypoint x="820" y="117" />
-        <di:waypoint x="875" y="117" />
+        <di:waypoint x="790" y="230" />
+        <di:waypoint x="840" y="230" />
       </bpmndi:BPMNEdge>
       
       <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
-        <di:waypoint x="925" y="117" />
-        <di:waypoint x="980" y="117" />
-        <bpmndi:BPMNLabel>
-          <dc:Bounds x="944" y="99" width="24" height="14" />
-        </bpmndi:BPMNLabel>
+        <di:waypoint x="940" y="230" />
+        <di:waypoint x="995" y="230" />
       </bpmndi:BPMNEdge>
       
       <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
-        <di:waypoint x="900" y="142" />
-        <di:waypoint x="900" y="202" />
+        <di:waypoint x="1045" y="230" />
+        <di:waypoint x="1105" y="230" />
         <bpmndi:BPMNLabel>
-          <dc:Bounds x="904" y="169" width="32" height="14" />
+          <dc:Bounds x="1054" y="212" width="52" height="14" />
         </bpmndi:BPMNLabel>
       </bpmndi:BPMNEdge>
       
       <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8">
-        <di:waypoint x="1080" y="117" />
-        <di:waypoint x="1132" y="117" />
+        <di:waypoint x="1020" y="255" />
+        <di:waypoint x="1020" y="420" />
+        <di:waypoint x="1105" y="420" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1024" y="335" width="52" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_TL_di" bpmnElement="Flow_TL">
+        <di:waypoint x="1130" y="205" />
+        <di:waypoint x="1130" y="140" />
+        <di:waypoint x="1210" y="140" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_PM_di" bpmnElement="Flow_PM">
+        <di:waypoint x="1130" y="255" />
+        <di:waypoint x="1130" y="320" />
+        <di:waypoint x="1210" y="320" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_TL_Complete_di" bpmnElement="Flow_TL_Complete">
+        <di:waypoint x="1310" y="140" />
+        <di:waypoint x="1390" y="140" />
+        <di:waypoint x="1390" y="205" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_PM_Complete_di" bpmnElement="Flow_PM_Complete">
+        <di:waypoint x="1310" y="320" />
+        <di:waypoint x="1390" y="320" />
+        <di:waypoint x="1390" y="255" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_CheckTLPM_di" bpmnElement="Flow_CheckTLPM">
+        <di:waypoint x="1415" y="230" />
+        <di:waypoint x="1475" y="230" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_TLPMApproved_di" bpmnElement="Flow_TLPMApproved">
+        <di:waypoint x="1525" y="230" />
+        <di:waypoint x="1585" y="230" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1534" y="212" width="72" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_TLPMRejected_di" bpmnElement="Flow_TLPMRejected">
+        <di:waypoint x="1500" y="255" />
+        <di:waypoint x="1500" y="420" />
+        <di:waypoint x="1475" y="420" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1504" y="335" width="62" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_HeadHRComplete_di" bpmnElement="Flow_HeadHRComplete">
+        <di:waypoint x="1685" y="230" />
+        <di:waypoint x="1745" y="230" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_FinalAccept_di" bpmnElement="Flow_FinalAccept">
+        <di:waypoint x="1795" y="230" />
+        <di:waypoint x="1855" y="230" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1804" y="212" width="62" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_FinalReject_di" bpmnElement="Flow_FinalReject">
+        <di:waypoint x="1770" y="255" />
+        <di:waypoint x="1770" y="420" />
+        <di:waypoint x="1745" y="420" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1774" y="335" width="62" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9">
+        <di:waypoint x="1955" y="230" />
+        <di:waypoint x="2017" y="230" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_10">
+        <di:waypoint x="1155" y="460" />
+        <di:waypoint x="1155" y="512" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_11_di" bpmnElement="Flow_11">
+        <di:waypoint x="1525" y="460" />
+        <di:waypoint x="1525" y="512" />
+      </bpmndi:BPMNEdge>
+      
+      <bpmndi:BPMNEdge id="Flow_12_di" bpmnElement="Flow_12">
+        <di:waypoint x="1795" y="460" />
+        <di:waypoint x="1795" y="512" />
       </bpmndi:BPMNEdge>
       
     </bpmndi:BPMNPlane>
