@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Professional Onboarding Form</title>
+    <title>Secure Professional Onboarding</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
@@ -14,14 +14,21 @@
     <div class="container">
         <div class="form-container">
             <div class="form-header">
-                <h1><i class="fas fa-user-plus"></i> Professional Onboarding Form</h1>
-                <p>Welcome to our company! Please complete this comprehensive onboarding form to finalize your joining process.</p>
+                <div class="welcome-banner">
+                    <div class="celebration-icon">🎉</div>
+                    <h1><i class="fas fa-user-plus"></i> Welcome to Our Team!</h1>
+                    <p class="welcome-message">Congratulations on your successful hiring! Please complete this secure onboarding form to finalize your joining process.</p>
+                </div>
+                <div class="security-badge">
+                    <i class="fas fa-shield-alt"></i>
+                    <span>Secure Email-Authenticated Access</span>
+                </div>
                 <div class="application-info" id="application-info">
                     <!-- Application info will be loaded here -->
                 </div>
             </div>
 
-            <form id="onboarding-form" class="workflow-form">
+            <form id="secure-onboarding-form" class="workflow-form">
                 <!-- Personal Information Section -->
                 <div class="form-section">
                     <h3><i class="fas fa-user"></i> Personal Information</h3>
@@ -82,8 +89,9 @@
                     <div class="form-row">
                         <div class="form-group">
                             <label for="personalEmail">Personal Email *</label>
-                            <input type="email" id="personalEmail" name="personalEmail" required 
+                            <input type="email" id="personalEmail" name="personalEmail" required readonly
                                    placeholder="your.personal@email.com">
+                            <small>This email is pre-filled from your application</small>
                         </div>
                         <div class="form-group">
                             <label for="mobileNumber">Mobile Number *</label>
@@ -369,11 +377,8 @@
                 </div>
 
                 <div class="form-actions">
-                    <button type="button" class="btn btn-secondary" onclick="goBack()">
-                        <i class="fas fa-arrow-left"></i> Back
-                    </button>
-                    <button type="submit" class="btn btn-primary">
-                        <i class="fas fa-check"></i> Complete Onboarding
+                    <button type="submit" class="btn btn-primary btn-large">
+                        <i class="fas fa-rocket"></i> Complete Onboarding & Join Team
                     </button>
                 </div>
             </form>
@@ -381,294 +386,32 @@
     </div>
 
     <script>
-        let applicationId = null;
+        let sessionToken = null;
 
-        // Get application ID from URL parameters
-        function getApplicationId() {
+        // Get session token from URL parameters
+        function getSessionToken() {
             const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get('applicationId');
+            return urlParams.get('session');
         }
 
-        // Load application information
-        async function loadApplicationInfo() {
-            applicationId = getApplicationId();
+        // Load application information using secure session
+        async function loadSecureApplicationInfo() {
+            sessionToken = getSessionToken();
             
-            if (!applicationId) {
-                showError('No application ID provided');
+            if (!sessionToken) {
+                showError('Invalid access. Please use the link from your email.');
                 return;
             }
 
             try {
-                const response = await fetch(`/api/job-applications/${applicationId}`);
+                const response = await fetch(`/api/secure-onboarding/application-info?session=${sessionToken}`);
                 const result = await response.json();
                 
-                if (result.data) {
-                    displayApplicationInfo(result.data);
-                } else {
-                    showError('Application not found');
-                }
-            } catch (error) {
-                console.error('Failed to load application info:', error);
-                showError('Failed to load application information');
-            }
-        }
-
-        // Display application information
-        function displayApplicationInfo(appData) {
-            const infoContainer = document.getElementById('application-info');
-            infoContainer.innerHTML = `
-                <div class="app-info-card">
-                    <h4>Application Details</h4>
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <strong>Application ID:</strong> ${applicationId}
-                        </div>
-                        <div class="info-item">
-                            <strong>Name:</strong> ${appData.firstName || ''} ${appData.lastName || ''}
-                        </div>
-                        <div class="info-item">
-                            <strong>Email:</strong> ${appData.email || 'N/A'}
-                        </div>
-                        <div class="info-item">
-                            <strong>Position:</strong> ${formatPosition(appData.position)}
-                        </div>
-                        <div class="info-item">
-                            <strong>Joining Date:</strong> ${appData.joiningDate || 'N/A'}
-                        </div>
-                        <div class="info-item">
-                            <strong>Reporting Manager:</strong> ${appData.reportingManager || 'N/A'}
-                        </div>
-                        <div class="info-item">
-                            <strong>Department:</strong> ${appData.department || 'N/A'}
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-        // Format position
-        function formatPosition(position) {
-            if (!position) return 'N/A';
-            const positions = {
-                'software-engineer': 'Software Engineer',
-                'senior-software-engineer': 'Senior Software Engineer',
-                'tech-lead': 'Tech Lead',
-                'product-manager': 'Product Manager'
-            };
-            return positions[position] || position;
-        }
-
-        // Copy current address to permanent address
-        function copyCurrentAddress() {
-            const checkbox = document.getElementById('sameAsCurrentAddress');
-            const currentAddress = document.getElementById('currentAddress').value;
-            const permanentAddress = document.getElementById('permanentAddress');
-            
-            if (checkbox.checked) {
-                permanentAddress.value = currentAddress;
-                permanentAddress.readOnly = true;
-            } else {
-                permanentAddress.readOnly = false;
-            }
-        }
-
-        // Handle form submission
-        document.getElementById('onboarding-form').addEventListener('submit', async function(e) {
-            e.preventDefault();
-            
-            if (!applicationId) {
-                showError('No application ID found');
-                return;
-            }
-
-            const formData = new FormData(this);
-            const onboardingData = {};
-            
-            // Convert FormData to object
-            for (let [key, value] of formData.entries()) {
-                onboardingData[key] = value.trim();
-            }
-
-            // Validate required fields
-            const requiredFields = ['aadharNumber', 'panNumber', 'bankName', 'bankAccountNumber', 
-                                  'bankIFSC', 'emergencyContactName', 'emergencyContact', 
-                                  'currentAddress', 'permanentAddress'];
-            
-            for (let field of requiredFields) {
-                if (!onboardingData[field]) {
-                    showError(`Please fill in the ${field.replace(/([A-Z])/g, ' $1').toLowerCase()}`);
-                    return;
-                }
-            }
-
-            // Show loading state
-            const submitButton = document.querySelector('button[type="submit"]');
-            const originalText = submitButton.innerHTML;
-            submitButton.disabled = true;
-            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-
-            try {
-                const response = await fetch(`/api/job-applications/${applicationId}/complete-onboarding`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(onboardingData)
-                });
-
-                const result = await response.json();
-
-                if (result.success) {
-                    showSuccess('Onboarding completed successfully!');
-                    setTimeout(() => {
-                        window.location.href = 'index.html';
-                    }, 2000);
-                } else {
-                    throw new Error(result.error || 'Failed to complete onboarding');
-                }
-
-            } catch (error) {
-                console.error('Failed to submit onboarding:', error);
-                showError('Failed to complete onboarding: ' + error.message);
-                
-                // Reset button
-                submitButton.disabled = false;
-                submitButton.innerHTML = originalText;
-            }
-        });
-
-        // Show error message
-        function showError(message) {
-            showNotification(message, 'error');
-        }
-
-        // Show success message
-        function showSuccess(message) {
-            showNotification(message, 'success');
-        }
-
-        // Show notification
-        function showNotification(message, type) {
-            const notification = document.createElement('div');
-            notification.className = `notification notification-${type}`;
-            notification.style.cssText = `
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                background: ${type === 'success' ? '#34a853' : '#ea4335'};
-                color: white;
-                padding: 1rem 1.5rem;
-                border-radius: 8px;
-                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-                z-index: 1000;
-                animation: slideIn 0.3s ease;
-            `;
-            notification.innerHTML = `
-                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
-                ${message}
-            `;
-            
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.style.animation = 'slideOut 0.3s ease';
-                setTimeout(() => notification.remove(), 300);
-            }, 5000);
-        }
-
-        // Go back function
-        function goBack() {
-            if (confirm('Are you sure you want to go back? Your progress will be lost.')) {
-                window.history.back();
-            }
-        }
-
-        // Load application info on page load
-        document.addEventListener('DOMContentLoaded', loadApplicationInfo);
-
-        // Add CSS animations
-        const style = document.createElement('style');
-        style.textContent = `
-            @keyframes slideIn {
-                from { transform: translateX(100%); opacity: 0; }
-                to { transform: translateX(0); opacity: 1; }
-            }
-            @keyframes slideOut {
-                from { transform: translateX(0); opacity: 1; }
-                to { transform: translateX(100%); opacity: 0; }
-            }
-            
-            .app-info-card {
-                background: #f8fafc;
-                border: 1px solid #e2e8f0;
-                border-radius: 8px;
-                padding: 1.5rem;
-                margin-bottom: 2rem;
-            }
-            
-            .app-info-card h4 {
-                margin-bottom: 1rem;
-                color: #1a73e8;
-            }
-            
-            .info-grid {
-                display: grid;
-                grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-                gap: 1rem;
-            }
-            
-            .info-item {
-                padding: 0.5rem 0;
-                border-bottom: 1px solid #e2e8f0;
-            }
-            
-            .info-item:last-child {
-                border-bottom: none;
-            }
-            
-            .checkbox-group {
-                margin-top: 0.5rem;
-                display: flex;
-                align-items: center;
-                gap: 0.5rem;
-            }
-            
-            .checkbox-group input[type="checkbox"] {
-                width: auto;
-                margin: 0;
-            }
-        `;
-        document.head.appendChild(style);
-    </script>
-</body>
-</html>
-    <script>
-        let applicationId = null;
-
-        // Get application ID from URL parameters
-        function getApplicationId() {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get('applicationId');
-        }
-
-        // Load application information
-        async function loadApplicationInfo() {
-            applicationId = getApplicationId();
-            
-            if (!applicationId) {
-                showError('No application ID provided');
-                return;
-            }
-
-            try {
-                const response = await fetch(`/api/job-applications/${applicationId}`);
-                const result = await response.json();
-                
-                if (result.data) {
+                if (result.success && result.data) {
                     displayApplicationInfo(result.data);
                     prefillFormData(result.data);
                 } else {
-                    showError('Application not found');
+                    showError(result.error || 'Failed to load application information');
                 }
             } catch (error) {
                 console.error('Failed to load application info:', error);
@@ -681,31 +424,19 @@
             const infoContainer = document.getElementById('application-info');
             infoContainer.innerHTML = `
                 <div class="app-info-card">
-                    <h4><i class="fas fa-briefcase"></i> Your Job Application Details</h4>
+                    <h4><i class="fas fa-briefcase"></i> Your Hiring Details</h4>
                     <div class="info-grid">
                         <div class="info-item">
-                            <strong>Application ID:</strong> ${applicationId}
-                        </div>
-                        <div class="info-item">
                             <strong>Name:</strong> ${appData.firstName || ''} ${appData.lastName || ''}
-                        </div>
-                        <div class="info-item">
-                            <strong>Email:</strong> ${appData.email || 'N/A'}
                         </div>
                         <div class="info-item">
                             <strong>Position:</strong> ${formatPosition(appData.position)}
                         </div>
                         <div class="info-item">
-                            <strong>Joining Date:</strong> ${appData.joiningDate || 'To be decided'}
+                            <strong>Email:</strong> ${appData.email || 'N/A'}
                         </div>
                         <div class="info-item">
-                            <strong>Reporting Manager:</strong> ${appData.reportingManager || 'To be assigned'}
-                        </div>
-                        <div class="info-item">
-                            <strong>Department:</strong> ${appData.department || 'To be assigned'}
-                        </div>
-                        <div class="info-item">
-                            <strong>Status:</strong> <span class="status-approved">Approved for Onboarding</span>
+                            <strong>Status:</strong> <span class="status-hired">🎉 Hired - Complete Onboarding</span>
                         </div>
                     </div>
                 </div>
@@ -722,9 +453,6 @@
             }
             if (appData.phone) {
                 document.getElementById('mobileNumber').value = appData.phone;
-            }
-            if (appData.joiningDate) {
-                document.getElementById('expectedJoiningDate').value = appData.joiningDate;
             }
         }
 
@@ -768,12 +496,23 @@
             return true;
         }
 
-        // Handle form submission
-        document.getElementById('onboarding-form').addEventListener('submit', async function(e) {
+        // Handle secure form submission
+        document.getElementById('secure-onboarding-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            if (!applicationId) {
-                showError('No application ID found');
+            if (!sessionToken) {
+                showError('Invalid session. Please use the link from your email.');
+                return;
+            }
+
+            // Validate PAN number format
+            const panInput = document.getElementById('panNumber');
+            const panValue = panInput.value.toUpperCase();
+            const panPattern = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+            
+            if (panValue.length !== 10 || !panPattern.test(panValue)) {
+                panInput.focus();
+                showError('Please enter a valid 10-character PAN number (Format: ABCDE1234F)');
                 return;
             }
 
@@ -816,15 +555,18 @@
             const submitButton = document.querySelector('button[type="submit"]');
             const originalText = submitButton.innerHTML;
             submitButton.disabled = true;
-            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing Onboarding...';
+            submitButton.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing Your Onboarding...';
 
             try {
-                const response = await fetch(`/api/job-applications/${applicationId}/complete-onboarding`, {
+                const response = await fetch(`/api/secure-onboarding/complete`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify(onboardingData)
+                    body: JSON.stringify({
+                        session: sessionToken,
+                        onboardingData: onboardingData
+                    })
                 });
 
                 const result = await response.json();
@@ -840,16 +582,16 @@
                                     <div class="completion-icon">
                                         <i class="fas fa-check-circle"></i>
                                     </div>
-                                    <h1>Welcome to the Team!</h1>
-                                    <p>Your onboarding process has been completed successfully.</p>
+                                    <h1>🎊 Welcome to the Team!</h1>
+                                    <p>Your professional onboarding has been completed successfully.</p>
                                     <div class="completion-details">
-                                        <p><strong>Application ID:</strong> ${applicationId}</p>
                                         <p><strong>Status:</strong> Onboarding Complete</p>
-                                        <p><strong>Next Steps:</strong> HR will contact you with further details about your joining.</p>
+                                        <p><strong>Process:</strong> Workflow Completed</p>
+                                        <p><strong>Next Steps:</strong> HR will contact you with your joining details and first-day information.</p>
                                     </div>
-                                    <button onclick="window.location.href='index.html'" class="btn btn-primary">
-                                        <i class="fas fa-home"></i> Go to Home
-                                    </button>
+                                    <div class="success-message">
+                                        <p>🚀 You're now officially part of our team! We're excited to have you on board.</p>
+                                    </div>
                                 </div>
                             </div>
                         `;
@@ -879,6 +621,44 @@
             } else {
                 this.style.borderColor = '';
                 this.style.backgroundColor = '';
+            }
+        });
+
+        // Add real-time PAN number validation
+        document.getElementById('panNumber').addEventListener('input', function() {
+            const panValue = this.value.toUpperCase();
+            
+            // Update the input value to uppercase
+            this.value = panValue;
+            
+            // Remove any validation styling first
+            this.style.borderColor = '';
+            this.style.backgroundColor = '';
+            
+            if (panValue.length > 0) {
+                // Check if current input matches expected pattern so far
+                const isValidSoFar = /^[A-Z]*[0-9]*[A-Z]*$/.test(panValue);
+                
+                if (panValue.length === 10) {
+                    const panPattern = /^[A-Z]{5}[0-9]{4}[A-Z]{1}$/;
+                    if (panPattern.test(panValue)) {
+                        this.style.borderColor = '#34a853';
+                        this.style.backgroundColor = '#f0f9ff';
+                        this.setCustomValidity('');
+                    } else {
+                        this.style.borderColor = '#ea4335';
+                        this.style.backgroundColor = '#fef7f7';
+                        this.setCustomValidity('PAN format should be: 5 letters + 4 digits + 1 letter (e.g., ABCDE1234F)');
+                    }
+                } else if (!isValidSoFar) {
+                    this.style.borderColor = '#ea4335';
+                    this.style.backgroundColor = '#fef7f7';
+                    this.setCustomValidity('Only letters and numbers allowed');
+                } else {
+                    this.setCustomValidity('');
+                }
+            } else {
+                this.setCustomValidity('');
             }
         });
 
@@ -922,17 +702,10 @@
             }, 6000);
         }
 
-        // Go back function
-        function goBack() {
-            if (confirm('Are you sure you want to go back? Your progress will be lost.')) {
-                window.history.back();
-            }
-        }
-
         // Load application info on page load
-        document.addEventListener('DOMContentLoaded', loadApplicationInfo);
+        document.addEventListener('DOMContentLoaded', loadSecureApplicationInfo);
 
-        // Add CSS animations and styles
+        // Add enhanced CSS styles
         const style = document.createElement('style');
         style.textContent = `
             @keyframes slideIn {
@@ -944,8 +717,53 @@
                 to { transform: translateX(100%); opacity: 0; }
             }
             
-            .app-info-card {
+            .welcome-banner {
                 background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                border-radius: 16px;
+                padding: 2.5rem;
+                text-align: center;
+                margin-bottom: 1.5rem;
+                box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+            }
+            
+            .celebration-icon {
+                font-size: 4rem;
+                margin-bottom: 1rem;
+                animation: bounce 2s infinite;
+            }
+            
+            @keyframes bounce {
+                0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+                40% { transform: translateY(-10px); }
+                60% { transform: translateY(-5px); }
+            }
+            
+            .welcome-message {
+                font-size: 1.1rem;
+                margin-top: 1rem;
+                opacity: 0.95;
+            }
+            
+            .security-badge {
+                background: #f0f9ff;
+                border: 2px solid #0ea5e9;
+                border-radius: 25px;
+                padding: 0.75rem 1.5rem;
+                display: inline-flex;
+                align-items: center;
+                gap: 0.5rem;
+                color: #0369a1;
+                font-weight: 500;
+                margin-bottom: 1.5rem;
+            }
+            
+            .security-badge i {
+                color: #0ea5e9;
+            }
+            
+            .app-info-card {
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
                 color: white;
                 border-radius: 12px;
                 padding: 2rem;
@@ -967,18 +785,18 @@
             
             .info-item {
                 padding: 0.75rem;
-                background: rgba(255,255,255,0.1);
+                background: rgba(255,255,255,0.15);
                 border-radius: 8px;
                 backdrop-filter: blur(10px);
             }
             
-            .status-approved {
-                background: #34a853;
-                color: white;
+            .status-hired {
+                background: #fbbf24;
+                color: #92400e;
                 padding: 0.25rem 0.75rem;
                 border-radius: 20px;
                 font-size: 0.9rem;
-                font-weight: 500;
+                font-weight: 600;
             }
             
             .form-row {
@@ -1011,76 +829,23 @@
                 color: #1a73e8;
             }
             
-            .form-group label {
-                font-weight: 500;
-                color: #374151;
-                margin-bottom: 0.5rem;
-                display: block;
-            }
-            
-            .form-group input,
-            .form-group select,
-            .form-group textarea {
+            .btn-large {
+                padding: 1rem 2rem;
+                font-size: 1.1rem;
+                font-weight: 600;
                 width: 100%;
-                padding: 0.75rem;
-                border: 2px solid #e2e8f0;
-                border-radius: 8px;
-                font-size: 0.95rem;
-                transition: all 0.2s ease;
-                background: #fafafa;
+                background: linear-gradient(135deg, #1a73e8 0%, #1557b0 100%);
+                border: none;
+                border-radius: 12px;
+                color: white;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 15px rgba(26, 115, 232, 0.3);
             }
             
-            .form-group input:focus,
-            .form-group select:focus,
-            .form-group textarea:focus {
-                outline: none;
-                border-color: #1a73e8;
-                background: white;
-                box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
-            }
-            
-            .form-group small {
-                color: #6b7280;
-                font-size: 0.85rem;
-                margin-top: 0.25rem;
-                display: block;
-            }
-            
-            @media (max-width: 768px) {
-                .form-row {
-                    grid-template-columns: 1fr;
-                    gap: 1rem;
-                }
-                .info-grid {
-                    grid-template-columns: 1fr;
-                }
-            }
-            
-            .checkbox-group {
-                margin-top: 0.75rem;
-                display: flex;
-                align-items: center;
-                gap: 0.75rem;
-            }
-            
-            .checkbox-group input[type="checkbox"] {
-                width: auto;
-                margin: 0;
-                transform: scale(1.2);
-            }
-            
-            .declaration-text {
-                background: #f8fafc;
-                border-left: 4px solid #1a73e8;
-                padding: 1rem;
-                margin-bottom: 1rem;
-                border-radius: 0 8px 8px 0;
-            }
-            
-            .declaration-text p {
-                margin: 0;
-                color: #374151;
-                line-height: 1.6;
+            .btn-large:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(26, 115, 232, 0.4);
             }
             
             .completion-container {
@@ -1094,37 +859,62 @@
             
             .completion-card {
                 background: white;
-                border-radius: 16px;
+                border-radius: 20px;
                 padding: 3rem;
                 text-align: center;
-                box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-                max-width: 500px;
+                box-shadow: 0 25px 50px rgba(0,0,0,0.15);
+                max-width: 600px;
                 width: 100%;
             }
             
             .completion-icon {
-                font-size: 4rem;
-                color: #34a853;
+                font-size: 5rem;
+                color: #10b981;
                 margin-bottom: 1.5rem;
             }
             
             .completion-card h1 {
                 color: #1a73e8;
                 margin-bottom: 1rem;
-                font-size: 2rem;
+                font-size: 2.5rem;
             }
             
             .completion-details {
                 background: #f8fafc;
-                border-radius: 8px;
-                padding: 1.5rem;
-                margin: 1.5rem 0;
+                border-radius: 12px;
+                padding: 2rem;
+                margin: 2rem 0;
                 text-align: left;
             }
             
             .completion-details p {
-                margin: 0.5rem 0;
+                margin: 0.75rem 0;
                 color: #374151;
+                font-size: 1.1rem;
+            }
+            
+            .success-message {
+                background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+                color: white;
+                padding: 1.5rem;
+                border-radius: 12px;
+                margin-top: 2rem;
+            }
+            
+            @media (max-width: 768px) {
+                .form-row {
+                    grid-template-columns: 1fr;
+                    gap: 1rem;
+                }
+                .info-grid {
+                    grid-template-columns: 1fr;
+                }
+                .welcome-banner {
+                    padding: 2rem 1.5rem;
+                }
+                .celebration-icon {
+                    font-size: 3rem;
+                }
             }
         `;
         document.head.appendChild(style);

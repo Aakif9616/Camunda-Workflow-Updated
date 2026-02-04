@@ -289,15 +289,119 @@
             text-align: center;
         }
 
+        .congratulations-header {
+            margin-bottom: 2rem;
+        }
+
+        .celebration-animation {
+            font-size: 4rem;
+            animation: bounce 2s infinite;
+            margin-bottom: 1rem;
+        }
+
+        @keyframes bounce {
+            0%, 20%, 50%, 80%, 100% { transform: translateY(0); }
+            40% { transform: translateY(-10px); }
+            60% { transform: translateY(-5px); }
+        }
+
         .offer-section h3 {
-            font-size: 1.5rem;
+            font-size: 1.8rem;
             margin-bottom: 0.5rem;
         }
 
+        .offer-details {
+            background: rgba(255,255,255,0.15);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            backdrop-filter: blur(10px);
+        }
+
         .offer-ctc {
-            font-size: 2rem;
+            font-size: 2.5rem;
             font-weight: 700;
             margin: 1rem 0;
+            color: #fbbf24;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .status-hired {
+            background: #fbbf24;
+            color: #92400e;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-size: 1rem;
+            font-weight: 600;
+            display: inline-block;
+            margin-top: 0.5rem;
+        }
+
+        .email-notification-success {
+            background: rgba(16, 185, 129, 0.2);
+            border: 2px solid rgba(16, 185, 129, 0.5);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            text-align: left;
+        }
+
+        .email-notification-success h4 {
+            color: #10b981;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .email-notification-pending {
+            background: rgba(251, 191, 36, 0.2);
+            border: 2px solid rgba(251, 191, 36, 0.5);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1.5rem 0;
+            text-align: left;
+        }
+
+        .email-notification-pending h4 {
+            color: #f59e0b;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .next-steps-section {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin-top: 1.5rem;
+            text-align: left;
+        }
+
+        .next-steps-section h4 {
+            color: white;
+            margin-bottom: 1rem;
+            font-size: 1.2rem;
+        }
+
+        .next-steps-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .next-steps-list li {
+            padding: 0.75rem 0;
+            border-bottom: 1px solid rgba(255,255,255,0.2);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .next-steps-list li:last-child {
+            border-bottom: none;
+        }
+
+        .next-steps-list li i {
+            color: #fbbf24;
+            width: 20px;
+            text-align: center;
         }
 
         .error-message {
@@ -455,12 +559,15 @@
             // Build timeline
             buildTimeline(currentStatus, approvals, appData);
             
-            // Show offer section if accepted
-            if (currentStatus === 'ACCEPTED' && appData.offerCTC) {
+            // Show offer section if hired
+            if ((currentStatus === 'HIRED' || currentStatus === 'ACCEPTED') && appData.offerCTC) {
                 const offerSection = document.getElementById('offer-section');
                 const offerCTC = document.getElementById('offer-ctc');
                 offerCTC.textContent = `₹${appData.offerCTC} LPA`;
                 offerSection.style.display = 'block';
+                
+                // Show congratulations message and email notification status
+                showCongratulationsMessage(appData);
             }
         }
 
@@ -477,8 +584,11 @@
                     return { class: 'status-pending', icon: 'fas fa-clock', text: 'Pending Final Review' };
                 case 'PENDING_COMPANY_MANAGER_REVIEW':
                     return { class: 'status-pending', icon: 'fas fa-clock', text: 'Pending Company Manager Review' };
+                case 'PENDING_HR_HIRING':
+                    return { class: 'status-pending', icon: 'fas fa-clock', text: 'Pending HR Hiring Decision' };
+                case 'HIRED':
                 case 'ACCEPTED':
-                    return { class: 'status-accepted', icon: 'fas fa-check-circle', text: 'Application Accepted' };
+                    return { class: 'status-accepted', icon: 'fas fa-check-circle', text: 'Congratulations! You\'re Hired!' };
                 case 'REJECTED_BY_HR':
                     return { class: 'status-rejected', icon: 'fas fa-times-circle', text: 'Rejected by HR' };
                 case 'REJECTED_BY_TL_PM':
@@ -657,6 +767,72 @@
                     </div>
                 </div>
             `;
+        }
+
+        function showCongratulationsMessage(appData) {
+            const offerSection = document.getElementById('offer-section');
+            
+            // Check if hire notification email was sent
+            const emailSent = appData.hireNotificationEmailSent === true;
+            const emailSentAt = appData.hireNotificationEmailSentAt;
+            
+            let emailStatusHTML = '';
+            if (emailSent) {
+                emailStatusHTML = `
+                    <div class="email-notification-success">
+                        <h4><i class="fas fa-envelope-check"></i> Onboarding Email Sent!</h4>
+                        <p>We've sent you a congratulations email with your secure onboarding form link.</p>
+                        <p><strong>Sent at:</strong> ${formatDateTime(emailSentAt)}</p>
+                        <p><i class="fas fa-info-circle"></i> Please check your email inbox and complete the onboarding form to finalize your joining process.</p>
+                    </div>
+                `;
+            } else {
+                emailStatusHTML = `
+                    <div class="email-notification-pending">
+                        <h4><i class="fas fa-clock"></i> Onboarding Email Pending</h4>
+                        <p>Your onboarding email is being processed. You should receive it shortly.</p>
+                        <p><i class="fas fa-info-circle"></i> If you don't receive the email within 10 minutes, please contact HR.</p>
+                    </div>
+                `;
+            }
+            
+            // Update offer section with congratulations and email status
+            offerSection.innerHTML = `
+                <div class="congratulations-header">
+                    <div class="celebration-animation">🎉</div>
+                    <h3><i class="fas fa-trophy"></i> Congratulations! You're Hired!</h3>
+                    <p>We are thrilled to welcome you to our team!</p>
+                </div>
+                
+                <div class="offer-details">
+                    <div class="offer-ctc" id="offer-ctc">₹${appData.finalOfferCTC || appData.offerCTC || '0'} LPA</div>
+                    <p><strong>Position:</strong> ${formatPosition(appData.position)}</p>
+                    <p><strong>Status:</strong> <span class="status-hired">🎊 Hired - Complete Onboarding</span></p>
+                </div>
+                
+                ${emailStatusHTML}
+                
+                <div class="next-steps-section">
+                    <h4><i class="fas fa-list-check"></i> Next Steps</h4>
+                    <ol class="next-steps-list">
+                        <li><i class="fas fa-envelope"></i> Check your email for the onboarding link</li>
+                        <li><i class="fas fa-form"></i> Complete the comprehensive onboarding form</li>
+                        <li><i class="fas fa-calendar"></i> HR will contact you with joining details</li>
+                        <li><i class="fas fa-handshake"></i> Welcome to the team!</li>
+                    </ol>
+                </div>
+            `;
+        }
+
+        function formatPosition(position) {
+            if (!position) return 'N/A';
+            const positions = {
+                'software-engineer': 'Software Engineer',
+                'senior-software-engineer': 'Senior Software Engineer',
+                'tech-lead': 'Tech Lead',
+                'product-manager': 'Product Manager'
+            };
+            return positions[position] || position;
         }
 
         function formatDateTime(dateTimeString) {

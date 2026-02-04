@@ -79,6 +79,13 @@
             <artifactId>commons-lang3</artifactId>
         </dependency>
         
+        <!-- JavaMail for Email Functionality -->
+        <dependency>
+            <groupId>com.sun.mail</groupId>
+            <artifactId>javax.mail</artifactId>
+            <version>1.6.2</version>
+        </dependency>
+        
         <!-- Testing -->
         <dependency>
             <groupId>org.springframework.boot</groupId>

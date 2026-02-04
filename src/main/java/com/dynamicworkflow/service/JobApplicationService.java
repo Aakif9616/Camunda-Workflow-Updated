@@ -11,6 +11,7 @@ import org.camunda.bpm.engine.task.Task;
 import org.camunda.bpm.engine.history.HistoricProcessInstance;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -31,23 +32,25 @@ public class JobApplicationService {
     private final HistoryService historyService;
     private final WorkflowDefinitionService workflowDefinitionService;
     private final ValidationService validationService;
+    private final ReferralService referralService;
+    private final EmailService emailService;
     
     // In-memory storage for application data
     private final Map<String, Map<String, Object>> applicationDataStore = new ConcurrentHashMap<>();
     private final Map<String, String> applicationStatusStore = new ConcurrentHashMap<>();
     
-    private final ReferralService referralService;
-    
     public JobApplicationService(ProcessEngine processEngine, 
                                WorkflowDefinitionService workflowDefinitionService,
                                ValidationService validationService,
-                               ReferralService referralService) {
+                               ReferralService referralService,
+                               EmailService emailService) {
         this.runtimeService = processEngine.getRuntimeService();
         this.taskService = processEngine.getTaskService();
         this.historyService = processEngine.getHistoryService();
         this.workflowDefinitionService = workflowDefinitionService;
         this.validationService = validationService;
         this.referralService = referralService;
+        this.emailService = emailService;
     }
     
     public ApplicationResponse startApplication() {
@@ -431,7 +434,7 @@ public class JobApplicationService {
             return "accept".equals(companyManagerDecision) ? "ACCEPTED" : "REJECTED_BY_COMPANY_MANAGER";
         } else if (processVariables.containsKey("headHRDecision")) {
             String headHRDecision = (String) processVariables.get("headHRDecision");
-            return "accept".equals(headHRDecision) ? "ACCEPTED" : "REJECTED_BY_HEAD_HR";
+            return "accept".equals(headHRDecision) ? "PENDING_COMPANY_MANAGER_REVIEW" : "REJECTED_BY_HEAD_HR";
         } else if (processVariables.containsKey("tlDecision") || processVariables.containsKey("pmDecision")) {
             String tlDecision = (String) processVariables.get("tlDecision");
             String pmDecision = (String) processVariables.get("pmDecision");
@@ -589,8 +592,8 @@ public class JobApplicationService {
                     }
                     appData.put("companyManagerDecision", "accept");
                     appData.put("companyManagerComments", comments);
-                    appData.put("applicationStatus", "ACCEPTED");
-                    applicationStatusStore.put(applicationId, "ACCEPTED");
+                    appData.put("applicationStatus", "PENDING_HR_HIRING");
+                    applicationStatusStore.put(applicationId, "PENDING_HR_HIRING");
                     break;
                     
                 default:
@@ -889,6 +892,121 @@ public class JobApplicationService {
         }
     }
 
+    /**
+     * HR hires a candidate (final step that sends congratulations email)
+     */
+    public Map<String, Object> hireCandidateByHR(String applicationId, String hrComments, String joiningDate, String department) {
+        try {
+            Map<String, Object> result = new HashMap<>();
+            
+            // Get application data
+            Map<String, Object> appData = applicationDataStore.get(applicationId);
+            if (appData == null) {
+                throw new RuntimeException("Application not found: " + applicationId);
+            }
+            
+            // Update application status to HIRED
+            appData.put("applicationStatus", "HIRED");
+            appData.put("hrHiringComments", hrComments);
+            appData.put("joiningDate", joiningDate);
+            appData.put("department", department);
+            appData.put("hiredByHR", true);
+            appData.put("hiredTimestamp", LocalDateTime.now().toString());
+            applicationStatusStore.put(applicationId, "HIRED");
+            
+            // Send congratulations email with onboarding link
+            try {
+                boolean emailSent = emailService.sendHireNotificationEmail(appData);
+                if (emailSent) {
+                    appData.put("hireNotificationEmailSent", true);
+                    appData.put("hireNotificationEmailSentAt", LocalDateTime.now().toString());
+                    logger.info("Hire notification email sent successfully for application: {}", applicationId);
+                } else {
+                    appData.put("hireNotificationEmailSent", false);
+                    logger.warn("Failed to send hire notification email for application: {}", applicationId);
+                }
+            } catch (Exception e) {
+                logger.error("Error sending hire notification email for application {}: {}", applicationId, e.getMessage());
+                appData.put("hireNotificationEmailSent", false);
+            }
+            
+            // Update application data
+            appData.put("lastUpdatedTimestamp", LocalDateTime.now().toString());
+            applicationDataStore.put(applicationId, appData);
+            
+            result.put("success", true);
+            result.put("message", "Candidate hired successfully by HR and email sent");
+            result.put("applicationId", applicationId);
+            result.put("newStatus", "HIRED");
+            result.put("emailSent", appData.get("hireNotificationEmailSent"));
+            result.put("joiningDate", joiningDate);
+            result.put("department", department);
+            result.put("timestamp", LocalDateTime.now().toString());
+            
+            logger.info("Candidate hired by HR for application {}: joining={}, dept={}", applicationId, joiningDate, department);
+            
+            return result;
+            
+        } catch (Exception e) {
+            logger.error("Failed to hire candidate by HR for application {}: {}", applicationId, e.getMessage());
+            throw new RuntimeException("Failed to hire candidate: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Manually update application status to ACCEPTED and send email (for testing/fixing)
+     */
+    public Map<String, Object> markApplicationAsAcceptedAndSendEmail(String applicationId) {
+        try {
+            Map<String, Object> result = new HashMap<>();
+            
+            // Get application data
+            Map<String, Object> appData = applicationDataStore.get(applicationId);
+            if (appData == null) {
+                throw new RuntimeException("Application not found: " + applicationId);
+            }
+            
+            // Update status to ACCEPTED
+            appData.put("applicationStatus", "ACCEPTED");
+            applicationStatusStore.put(applicationId, "ACCEPTED");
+            appData.put("lastUpdatedTimestamp", LocalDateTime.now().toString());
+            
+            // Send congratulations email with onboarding link
+            try {
+                boolean emailSent = emailService.sendHireNotificationEmail(appData);
+                if (emailSent) {
+                    appData.put("hireNotificationEmailSent", true);
+                    appData.put("hireNotificationEmailSentAt", LocalDateTime.now().toString());
+                    logger.info("Hire notification email sent successfully for application: {}", applicationId);
+                } else {
+                    appData.put("hireNotificationEmailSent", false);
+                    logger.warn("Failed to send hire notification email for application: {}", applicationId);
+                }
+            } catch (Exception e) {
+                logger.error("Error sending hire notification email for application {}: {}", applicationId, e.getMessage());
+                appData.put("hireNotificationEmailSent", false);
+            }
+            
+            // Update application data
+            applicationDataStore.put(applicationId, appData);
+            
+            result.put("success", true);
+            result.put("message", "Application marked as ACCEPTED and email sent");
+            result.put("applicationId", applicationId);
+            result.put("newStatus", "ACCEPTED");
+            result.put("emailSent", appData.get("hireNotificationEmailSent"));
+            result.put("timestamp", LocalDateTime.now().toString());
+            
+            logger.info("Application {} manually marked as ACCEPTED and email sent", applicationId);
+            
+            return result;
+            
+        } catch (Exception e) {
+            logger.error("Failed to mark application {} as ACCEPTED: {}", applicationId, e.getMessage());
+            throw new RuntimeException("Failed to mark application as ACCEPTED: " + e.getMessage());
+        }
+    }
+
     private String generateApplicationId() {
         return "APP-" + System.currentTimeMillis() + "-" + 
                UUID.randomUUID().toString().substring(0, 8).toUpperCase();
@@ -964,6 +1082,13 @@ public class JobApplicationService {
     }
     
     /**
+     * Get application data by ID
+     */
+    public Map<String, Object> getApplicationById(String applicationId) {
+        return applicationDataStore.get(applicationId);
+    }
+    
+    /**
      * Complete the candidate onboarding process
      */
     public Map<String, Object> completeOnboarding(String applicationId, Map<String, Object> onboardingData) {
@@ -978,60 +1103,75 @@ public class JobApplicationService {
             
             // Find the Candidate Onboarding task for this application
             String processInstanceId = (String) appData.get("processInstanceId");
-            if (processInstanceId == null) {
-                throw new RuntimeException("No process instance found for application: " + applicationId);
-            }
             
-            // Find the candidate onboarding task
-            List<Task> activeTasks = taskService.createTaskQuery()
-                .processInstanceId(processInstanceId)
-                .active()
-                .list();
-            
-            Task onboardingTask = null;
-            for (Task task : activeTasks) {
-                if (task.getName().contains("Candidate Onboarding")) {
-                    onboardingTask = task;
-                    break;
-                }
-            }
-            
-            if (onboardingTask == null) {
-                throw new RuntimeException("No active candidate onboarding task found for application: " + applicationId);
-            }
-            
-            // Prepare task variables with onboarding data
-            Map<String, Object> taskVariables = new HashMap<>();
-            taskVariables.put("aadharNumber", onboardingData.get("aadharNumber"));
-            taskVariables.put("panNumber", onboardingData.get("panNumber"));
-            taskVariables.put("bankAccountNumber", onboardingData.get("bankAccountNumber"));
-            taskVariables.put("bankIFSC", onboardingData.get("bankIFSC"));
-            taskVariables.put("bankName", onboardingData.get("bankName"));
-            taskVariables.put("emergencyContact", onboardingData.get("emergencyContact"));
-            taskVariables.put("emergencyContactName", onboardingData.get("emergencyContactName"));
-            taskVariables.put("currentAddress", onboardingData.get("currentAddress"));
-            taskVariables.put("permanentAddress", onboardingData.get("permanentAddress"));
-            taskVariables.put("bloodGroup", onboardingData.get("bloodGroup"));
-            
-            // Update application data with onboarding information
+            // Update application data with comprehensive onboarding information
             appData.putAll(onboardingData);
             appData.put("applicationStatus", "ONBOARDING_COMPLETED");
+            appData.put("onboardingCompletedDate", LocalDateTime.now().toString());
             appData.put("lastUpdatedTimestamp", LocalDateTime.now().toString());
+            appData.put("processCompleted", true);
             
-            // Complete the Camunda task
-            taskService.complete(onboardingTask.getId(), taskVariables);
+            // Complete the Camunda process if it exists
+            if (processInstanceId != null) {
+                try {
+                    // Find any active tasks for this process
+                    List<Task> activeTasks = taskService.createTaskQuery()
+                        .processInstanceId(processInstanceId)
+                        .active()
+                        .list();
+                    
+                    // Complete all active tasks to end the process
+                    for (Task task : activeTasks) {
+                        Map<String, Object> taskVariables = new HashMap<>();
+                        taskVariables.put("onboardingCompleted", true);
+                        taskVariables.put("onboardingCompletionDate", LocalDateTime.now().toString());
+                        taskVariables.putAll(onboardingData);
+                        
+                        taskService.complete(task.getId(), taskVariables);
+                        logger.info("Completed Camunda task: {} for application: {}", task.getId(), applicationId);
+                    }
+                    
+                    // Verify process has ended
+                    ProcessInstance processInstance = runtimeService.createProcessInstanceQuery()
+                        .processInstanceId(processInstanceId)
+                        .singleResult();
+                    
+                    if (processInstance == null) {
+                        logger.info("Camunda process successfully ended for application: {}", applicationId);
+                        appData.put("camundaProcessEnded", true);
+                    } else {
+                        logger.warn("Camunda process still active for application: {}", applicationId);
+                        appData.put("camundaProcessEnded", false);
+                    }
+                    
+                } catch (Exception e) {
+                    logger.warn("Failed to complete Camunda process for application {}: {}", applicationId, e.getMessage());
+                    // Continue without Camunda - the onboarding is still complete
+                    appData.put("camundaProcessEnded", false);
+                    appData.put("camundaError", e.getMessage());
+                }
+            } else {
+                logger.info("No Camunda process found for application: {}", applicationId);
+                appData.put("camundaProcessEnded", true);
+            }
             
             // Update stores
             applicationDataStore.put(applicationId, appData);
             applicationStatusStore.put(applicationId, "ONBOARDING_COMPLETED");
             
+            // Create comprehensive result
             result.put("success", true);
-            result.put("message", "Onboarding completed successfully");
+            result.put("message", "Professional onboarding completed successfully! Welcome to the team!");
             result.put("applicationId", applicationId);
             result.put("timestamp", LocalDateTime.now().toString());
             result.put("newStatus", "ONBOARDING_COMPLETED");
+            result.put("processCompleted", true);
+            result.put("candidateName", onboardingData.get("fullName"));
+            result.put("joiningDate", onboardingData.get("expectedJoiningDate"));
+            result.put("camundaProcessEnded", appData.get("camundaProcessEnded"));
             
-            logger.info("Onboarding completed for application {}", applicationId);
+            logger.info("Comprehensive onboarding completed for application {} - Candidate: {} - Camunda Process Ended: {}", 
+                       applicationId, onboardingData.get("fullName"), appData.get("camundaProcessEnded"));
             
             return result;
             

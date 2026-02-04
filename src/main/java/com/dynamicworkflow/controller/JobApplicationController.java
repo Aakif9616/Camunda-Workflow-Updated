@@ -442,6 +442,44 @@ public class JobApplicationController {
     }
 
     /**
+     * HR hires a candidate (sends congratulations email)
+     */
+    @PostMapping("/{applicationId}/hr-hire")
+    public ResponseEntity<Map<String, Object>> hireCandidateByHR(
+            @PathVariable String applicationId,
+            @RequestBody Map<String, Object> hiringData) {
+        try {
+            String hrComments = (String) hiringData.get("hrComments");
+            String joiningDate = (String) hiringData.get("joiningDate");
+            String department = (String) hiringData.get("department");
+            
+            Map<String, Object> result = jobApplicationService.hireCandidateByHR(applicationId, hrComments, joiningDate, department);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
+
+    /**
+     * Manually mark application as ACCEPTED and send email (for testing/fixing)
+     */
+    @PostMapping("/{applicationId}/mark-accepted")
+    public ResponseEntity<Map<String, Object>> markApplicationAsAccepted(@PathVariable String applicationId) {
+        try {
+            Map<String, Object> result = jobApplicationService.markApplicationAsAcceptedAndSendEmail(applicationId);
+            return ResponseEntity.ok(result);
+        } catch (Exception e) {
+            Map<String, Object> error = new HashMap<>();
+            error.put("success", false);
+            error.put("error", e.getMessage());
+            return ResponseEntity.badRequest().body(error);
+        }
+    }
+
+    /**
      * GET /api/job-applications/health
      * Health check endpoint
      */

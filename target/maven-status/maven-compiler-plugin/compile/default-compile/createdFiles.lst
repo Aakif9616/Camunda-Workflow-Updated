@@ -1,4 +1,6 @@
+com\dynamicworkflow\controller\SecureOnboardingApiController.class
 com\dynamicworkflow\delegate\StoreApplicationDelegate.class
+com\dynamicworkflow\controller\SecureOnboardingController.class
 com\dynamicworkflow\model\FormField.class
 com\dynamicworkflow\config\CamundaRestConfig.class
 com\dynamicworkflow\dto\ApplicationResponse.class
@@ -9,14 +11,17 @@ com\dynamicworkflow\controller\JobApplicationController.class
 com\dynamicworkflow\delegate\HROnboardingDelegate.class
 com\dynamicworkflow\delegate\CollectApplicantDataDelegate.class
 com\dynamicworkflow\delegate\SendRejectionDelegate.class
+com\dynamicworkflow\service\EmailService$1.class
 com\dynamicworkflow\service\UserService.class
 com\dynamicworkflow\controller\AuthController.class
+com\dynamicworkflow\service\EmailService.class
 com\dynamicworkflow\delegate\ValidationDelegate.class
 com\dynamicworkflow\model\WorkflowStep.class
 com\dynamicworkflow\model\WorkflowDefinition$ValidationRules.class
 com\dynamicworkflow\service\JobApplicationService.class
 com\dynamicworkflow\delegate\CandidateOnboardingDelegate.class
 com\dynamicworkflow\service\WorkflowDefinitionService.class
+com\dynamicworkflow\controller\OnboardingAccessController.class
 com\dynamicworkflow\model\User.class
 com\dynamicworkflow\model\FormField$FieldOption.class
 com\dynamicworkflow\config\CamundaConfig.class

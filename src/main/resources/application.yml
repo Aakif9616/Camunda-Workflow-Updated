@@ -65,6 +65,16 @@ camunda:
 # Application Configuration
 workflow:
   json-path: classpath:workflow-definition.json
+
+# Email Configuration for Professional Onboarding
+app:
+  email:
+    smtp:
+      host: smtp.gmail.com
+      port: 587
+    username: mohamedaakif10616@gmail.com
+    password: mpkzawhwwlofpygp
+    from: HR Team <mohamedaakif10616@gmail.com>
   
 # Logging
 logging:

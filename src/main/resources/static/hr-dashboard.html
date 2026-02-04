@@ -632,6 +632,19 @@
             border-top-color: var(--white);
             animation: spin 1s ease-in-out infinite;
         }
+
+        .hiring-info {
+            background: #e0f2fe;
+            border: 1px solid #0288d1;
+            border-radius: var(--border-radius);
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+            color: #01579b;
+        }
+
+        .hiring-info i {
+            margin-right: 0.5rem;
+        }
     </style>
 </head>
 <body>
@@ -973,6 +986,15 @@
                                     <i class="fas fa-times"></i>
                                     Reject Application
                                 </button>
+                            ` : status === 'PENDING_HR_HIRING' || (appData.companyManagerDecision === 'accept' && !appData.hiredByHR) ? `
+                                <button class="btn btn-success" onclick="showHiringModal('${appId}')">
+                                    <i class="fas fa-handshake"></i>
+                                    Hire Candidate & Send Email
+                                </button>
+                                <button class="btn btn-danger" onclick="showApprovalModal('${appId}', 'reject')">
+                                    <i class="fas fa-times"></i>
+                                    Reject Application
+                                </button>
                             ` : status === 'COMPANY_MANAGER_APPROVED' ? `
                                 <button class="btn btn-primary" onclick="showOnboardingModal('${appId}')">
                                     <i class="fas fa-user-plus"></i>
@@ -982,6 +1004,13 @@
                                     <i class="fas fa-times"></i>
                                     Reject Application
                                 </button>
+                            ` : appData.hiredByHR ? `
+                                <div class="decision-display">
+                                    <span class="decision-badge decision-approved">
+                                        <i class="fas fa-handshake"></i>
+                                        Hired by You - Email Sent
+                                    </span>
+                                </div>
                             ` : hrDecision ? `
                                 <div class="decision-display">
                                     <span class="decision-badge ${hrDecision === 'accept' ? 'decision-approved' : hrDecision === 'onboarding' ? 'decision-onboarding' : 'decision-rejected'}">
@@ -1005,7 +1034,9 @@
         function getStatusClass(status) {
             switch(status) {
                 case 'PENDING_HR_REVIEW': return 'status-pending';
+                case 'PENDING_HR_HIRING': return 'status-pending';
                 case 'HR_APPROVED':
+                case 'HIRED':
                 case 'ACCEPTED': return 'status-accepted';
                 case 'REJECTED_BY_HR':
                 case 'REJECTED_BY_TL_PM':
@@ -1017,7 +1048,9 @@
         function getStatusIcon(status) {
             switch(status) {
                 case 'PENDING_HR_REVIEW': return 'fas fa-clock';
+                case 'PENDING_HR_HIRING': return 'fas fa-handshake';
                 case 'HR_APPROVED':
+                case 'HIRED':
                 case 'ACCEPTED': return 'fas fa-check-circle';
                 case 'REJECTED_BY_HR':
                 case 'REJECTED_BY_TL_PM':
@@ -1032,7 +1065,9 @@
             }
             switch(status) {
                 case 'PENDING_HR_REVIEW': return 'Pending Review';
+                case 'PENDING_HR_HIRING': return 'Ready for Hiring';
                 case 'HR_APPROVED': return 'Approved by HR';
+                case 'HIRED': return 'Hired - Email Sent';
                 case 'ACCEPTED': return 'Final Acceptance';
                 case 'REJECTED_BY_HR': return 'Rejected by HR';
                 case 'REJECTED_BY_TL_PM': return 'Rejected by TL/PM';
@@ -1210,6 +1245,127 @@
                 submitButton.innerHTML = `
                     <i class="fas fa-${action === 'approve' ? 'check' : 'times'}"></i>
                     ${action === 'approve' ? 'Approve' : 'Reject'}
+                `;
+            }
+        }
+
+        // Hiring Modal Function (sends congratulations email)
+        function showHiringModal(applicationId) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h3 class="modal-title">
+                            <i class="fas fa-handshake"></i>
+                            Hire Candidate & Send Congratulations Email
+                        </h3>
+                        <button class="modal-close" onclick="closeModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>Application ID:</strong> ${applicationId}</p>
+                        <div class="hiring-info">
+                            <p><i class="fas fa-info-circle"></i> This will officially hire the candidate and send a congratulations email with the onboarding form link.</p>
+                        </div>
+                        <div class="form-group">
+                            <label for="joiningDate">Joining Date *</label>
+                            <input type="date" id="joiningDate" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="department">Department *</label>
+                            <select id="department" class="form-control" required>
+                                <option value="">Select Department</option>
+                                <option value="Engineering">Engineering</option>
+                                <option value="Product">Product</option>
+                                <option value="Marketing">Marketing</option>
+                                <option value="Sales">Sales</option>
+                                <option value="HR">Human Resources</option>
+                                <option value="Finance">Finance</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="hrComments">Welcome Message</label>
+                            <textarea id="hrComments" class="form-control" rows="3" placeholder="Welcome to the team! We're excited to have you on board..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                        <button 
+                            class="btn btn-success" 
+                            onclick="submitHiringDecision('${applicationId}')"
+                        >
+                            <i class="fas fa-envelope"></i>
+                            Hire & Send Email
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Set default joining date (1 week from now)
+            const nextWeek = new Date();
+            nextWeek.setDate(nextWeek.getDate() + 7);
+            document.getElementById('joiningDate').value = nextWeek.toISOString().split('T')[0];
+            
+            // Focus on department select
+            setTimeout(() => {
+                document.getElementById('department').focus();
+            }, 100);
+        }
+
+        async function submitHiringDecision(applicationId) {
+            const joiningDate = document.getElementById('joiningDate').value;
+            const department = document.getElementById('department').value;
+            const hrComments = document.getElementById('hrComments').value.trim() || 'Welcome to the team!';
+            const submitButton = document.querySelector('.modal-actions .btn-success');
+            
+            // Validate required fields
+            if (!joiningDate || !department) {
+                showNotification('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            // Show loading state
+            submitButton.disabled = true;
+            submitButton.innerHTML = `
+                <span class="loading-spinner"></span>
+                Hiring & Sending Email...
+            `;
+            
+            try {
+                const response = await fetch(`/api/job-applications/${applicationId}/hr-hire`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        joiningDate: joiningDate,
+                        department: department,
+                        hrComments: hrComments
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    closeModal();
+                    showNotification('✅ Candidate hired successfully! Congratulations email sent to candidate.', 'success');
+                    // Refresh applications to show updated status
+                    loadApplications();
+                } else {
+                    throw new Error(result.error || 'Failed to hire candidate');
+                }
+                
+            } catch (error) {
+                console.error('Failed to hire candidate:', error);
+                showNotification(`Failed to hire candidate: ${error.message}`, 'error');
+                
+                // Reset button state
+                submitButton.disabled = false;
+                submitButton.innerHTML = `
+                    <i class="fas fa-envelope"></i>
+                    Hire & Send Email
                 `;
             }
         }

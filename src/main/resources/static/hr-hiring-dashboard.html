@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HR Hiring Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css?v=3.0">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-user-tie"></i> HR Hiring Dashboard</h1>
+            <p>Final hiring decisions and onboarding email management</p>
+        </div>
+
+        <div class="dashboard-content">
+            <div class="applications-section">
+                <h2><i class="fas fa-clipboard-list"></i> Applications Ready for Hiring</h2>
+                <div class="applications-grid" id="applications-grid">
+                    <!-- Applications will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hiring Modal -->
+    <div id="hiring-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3><i class="fas fa-handshake"></i> Hire Candidate</h3>
+                <span class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div class="candidate-info" id="candidate-info">
+                    <!-- Candidate info will be populated here -->
+                </div>
+                
+                <form id="hiring-form">
+                    <div class="form-group">
+                        <label for="joiningDate">Joining Date *</label>
+                        <input type="date" id="joiningDate" name="joiningDate" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="department">Department *</label>
+                        <select id="department" name="department" required>
+                            <option value="">Select Department</option>
+                            <option value="Engineering">Engineering</option>
+                            <option value="Product">Product</option>
+                            <option value="Marketing">Marketing</option>
+                            <option value="Sales">Sales</option>
+                            <option value="HR">Human Resources</option>
+                            <option value="Finance">Finance</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="hrComments">HR Comments</label>
+                        <textarea id="hrComments" name="hrComments" rows="3" 
+                                  placeholder="Welcome message and any additional notes..."></textarea>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="fas fa-envelope"></i> Hire & Send Email
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentApplicationId = null;
+
+        // Load applications ready for hiring
+        async function loadApplications() {
+            try {
+                const response = await fetch('/api/job-applications/all');
+                const data = await response.json();
+                
+                const applicationsGrid = document.getElementById('applications-grid');
+                applicationsGrid.innerHTML = '';
+                
+                let readyForHiring = 0;
+                
+                for (const [appId, appData] of Object.entries(data.applications)) {
+                    const status = data.statuses[appId];
+                    
+                    // Show applications that are approved by Company Manager but not yet hired
+                    if (status === 'PENDING_HR_HIRING' || 
+                        (appData.companyManagerDecision === 'accept' && !appData.hiredByHR)) {
+                        
+                        readyForHiring++;
+                        const applicationCard = createApplicationCard(appId, appData, status);
+                        applicationsGrid.appendChild(applicationCard);
+                    }
+                }
+                
+                if (readyForHiring === 0) {
+                    applicationsGrid.innerHTML = `
+                        <div class="no-applications">
+                            <i class="fas fa-inbox"></i>
+                            <h3>No Applications Ready for Hiring</h3>
+                            <p>Applications approved by Company Manager will appear here for final hiring decision.</p>
+                        </div>
+                    `;
+                }
+                
+            } catch (error) {
+                console.error('Failed to load applications:', error);
+                showNotification('Failed to load applications', 'error');
+            }
+        }
+
+        // Create application card
+        function createApplicationCard(appId, appData, status) {
+            const card = document.createElement('div');
+            card.className = 'application-card';
+            
+            const candidateName = `${appData.firstName || 'N/A'} ${appData.lastName || ''}`;
+            const position = formatPosition(appData.position);
+            const email = appData.email || 'N/A';
+            const companyManagerComments = appData.companyManagerComments || 'No comments';
+            
+            card.innerHTML = `
+                <div class="card-header">
+                    <h3>${candidateName}</h3>
+                    <span class="status-badge status-ready">Ready for Hiring</span>
+                </div>
+                <div class="card-body">
+                    <div class="info-row">
+                        <span class="label">Position:</span>
+                        <span class="value">${position}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Email:</span>
+                        <span class="value">${email}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Application ID:</span>
+                        <span class="value">${appId}</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="label">Company Manager:</span>
+                        <span class="value">${companyManagerComments}</span>
+                    </div>
+                </div>
+                <div class="card-actions">
+                    <button class="btn btn-success" onclick="openHiringModal('${appId}')">
+                        <i class="fas fa-handshake"></i> Hire Candidate
+                    </button>
+                </div>
+            `;
+            
+            return card;
+        }
+
+        // Open hiring modal
+        function openHiringModal(applicationId) {
+            currentApplicationId = applicationId;
+            
+            // Get application data
+            fetch(`/api/job-applications/${applicationId}`)
+                .then(response => response.json())
+                .then(data => {
+                    const appData = data.data;
+                    const candidateName = `${appData.firstName || 'N/A'} ${appData.lastName || ''}`;
+                    const position = formatPosition(appData.position);
+                    
+                    document.getElementById('candidate-info').innerHTML = `
+                        <div class="candidate-summary">
+                            <h4>${candidateName}</h4>
+                            <p><strong>Position:</strong> ${position}</p>
+                            <p><strong>Email:</strong> ${appData.email}</p>
+                            <p><strong>Application ID:</strong> ${applicationId}</p>
+                        </div>
+                    `;
+                    
+                    // Set default joining date (1 week from now)
+                    const nextWeek = new Date();
+                    nextWeek.setDate(nextWeek.getDate() + 7);
+                    document.getElementById('joiningDate').value = nextWeek.toISOString().split('T')[0];
+                    
+                    document.getElementById('hiring-modal').style.display = 'block';
+                })
+                .catch(error => {
+                    console.error('Failed to load application data:', error);
+                    showNotification('Failed to load application data', 'error');
+                });
+        }
+
+        // Close modal
+        function closeModal() {
+            document.getElementById('hiring-modal').style.display = 'none';
+            currentApplicationId = null;
+        }
+
+        // Handle hiring form submission
+        document.getElementById('hiring-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            if (!currentApplicationId) {
+                showNotification('No application selected', 'error');
+                return;
+            }
+            
+            const formData = new FormData(this);
+            const hiringData = {
+                joiningDate: formData.get('joiningDate'),
+                department: formData.get('department'),
+                hrComments: formData.get('hrComments') || 'Welcome to the team!'
+            };
+            
+            try {
+                const response = await fetch(`/api/job-applications/${currentApplicationId}/hr-hire`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(hiringData)
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    showNotification('✅ Candidate hired successfully! Congratulations email sent.', 'success');
+                    closeModal();
+                    loadApplications(); // Refresh the list
+                } else {
+                    showNotification('Failed to hire candidate: ' + result.error, 'error');
+                }
+                
+            } catch (error) {
+                console.error('Failed to hire candidate:', error);
+                showNotification('Failed to hire candidate', 'error');
+            }
+        });
+
+        // Utility functions
+        function formatPosition(position) {
+            if (!position) return 'N/A';
+            const positions = {
+                'software-engineer': 'Software Engineer',
+                'senior-software-engineer': 'Senior Software Engineer',
+                'tech-lead': 'Tech Lead',
+                'product-manager': 'Product Manager'
+            };
+            return positions[position] || position;
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.textContent = message;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 5000);
+        }
+
+        // Modal close handlers
+        document.querySelector('.close').onclick = closeModal;
+        window.onclick = function(event) {
+            const modal = document.getElementById('hiring-modal');
+            if (event.target === modal) {
+                closeModal();
+            }
+        };
+
+        // Load applications on page load
+        document.addEventListener('DOMContentLoaded', loadApplications);
+        
+        // Auto-refresh every 30 seconds
+        setInterval(loadApplications, 30000);
+    </script>
+
+    <style>
+        .status-ready {
+            background: #10b981;
+            color: white;
+        }
+        
+        .candidate-summary {
+            background: #f8fafc;
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+        }
+        
+        .no-applications {
+            text-align: center;
+            padding: 3rem;
+            color: #6b7280;
+        }
+        
+        .no-applications i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+    </style>
+</body>
+</html>
