@@ -22,3 +22,7 @@ Thumbs.db
 # Temporary files
 *.tmp
 *.temp
+
+# Large files
+*.jar
+*.war
