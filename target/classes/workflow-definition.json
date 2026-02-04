@@ -138,26 +138,28 @@
         {
           "fieldId": "highestEducation",
           "fieldName": "Highest Education Level",
-          "fieldType": "dropdown",
+          "fieldType": "education-autocomplete",
           "required": true,
-          "options": [
-            {"value": "btech-be", "label": "B.Tech/B.E"},
-            {"value": "bca", "label": "BCA"},
-            {"value": "mtech-me", "label": "M.Tech/M.E"},
-            {"value": "mca", "label": "MCA"}
-          ]
+          "placeholder": "Type to search education levels (e.g., Bachelor, Master, Diploma)..."
         },
         {
           "fieldId": "skills",
           "fieldName": "Technical Skills",
-          "fieldType": "checkbox",
+          "fieldType": "skills-autocomplete",
           "required": true,
-          "options": [
-            {"value": "java", "label": "Java"},
-            {"value": "python", "label": "Python"},
-            {"value": "javascript", "label": "JavaScript"},
-            {"value": "spring-boot", "label": "Spring Boot"}
-          ]
+          "placeholder": "Type to search and select your technical skills..."
+        },
+        {
+          "fieldId": "referralId",
+          "fieldName": "Referral ID (Optional)",
+          "fieldType": "text",
+          "required": false,
+          "validation": {
+            "minLength": 5,
+            "maxLength": 20,
+            "pattern": "^[A-Z0-9]+$"
+          },
+          "placeholder": "Enter referral ID if you have one (e.g., REF12345)"
         }
       ]
     }

@@ -42,6 +42,35 @@ public class CollectApplicantDataDelegate implements JavaDelegate {
         applicantData.put("highestEducation", execution.getVariable("highestEducation"));
         applicantData.put("skills", execution.getVariable("skills"));
         
+        // Referral Information
+        String referralId = (String) execution.getVariable("referralId");
+        applicantData.put("referralId", referralId);
+        
+        // Check if referral ID is valid and set process variables for gateway
+        boolean hasValidReferral = false;
+        if (referralId != null && !referralId.trim().isEmpty()) {
+            // Check against valid referral IDs (same logic as ReferralService)
+            String[] validReferralIds = {"REF12345", "REF67890", "COMP2024", "HIRE123", "FAST001"};
+            String upperReferralId = referralId.trim().toUpperCase();
+            for (String validId : validReferralIds) {
+                if (validId.equals(upperReferralId)) {
+                    hasValidReferral = true;
+                    break;
+                }
+            }
+        }
+        
+        // Set referral process variables for the gateway
+        execution.setVariable("hasValidReferral", hasValidReferral);
+        execution.setVariable("bypassedApprovals", hasValidReferral);
+        
+        if (hasValidReferral) {
+            logger.info("Application {} has valid referral ID: {} - will bypass normal approval process", 
+                       applicationId, referralId);
+        } else if (referralId != null && !referralId.trim().isEmpty()) {
+            logger.warn("Application {} has invalid referral ID: {}", applicationId, referralId);
+        }
+        
         // Format data for HR display
         String applicantSummary = formatForHRReview(applicantData);
         
@@ -78,7 +107,14 @@ public class CollectApplicantDataDelegate implements JavaDelegate {
         summary.append("EXPERIENCE & EDUCATION:\n");
         summary.append("Total Experience: ").append(formatExperience(applicantData.get("totalExperience"))).append("\n");
         summary.append("Highest Education: ").append(getEducationLabel((String) applicantData.get("highestEducation"))).append("\n");
-        summary.append("Technical Skills: ").append(formatSkills(applicantData.get("skills"))).append("\n\n");
+        summary.append("Technical Skills: ").append(formatSkills(applicantData.get("skills"))).append("\n");
+        
+        // Referral Information
+        String referralId = (String) applicantData.get("referralId");
+        if (referralId != null && !referralId.trim().isEmpty()) {
+            summary.append("Referral ID: ").append(referralId.trim().toUpperCase()).append("\n");
+        }
+        summary.append("\n");
         
         summary.append("=== END SUMMARY ===");
         

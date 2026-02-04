@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Applications - Job Recruitment</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #1a73e8;
+            --primary-hover: #1557b0;
+            --secondary-color: #5f6368;
+            --accent-color: #34a853;
+            --accent-hover: #2d8f47;
+            --white: #ffffff;
+            --gray-50: #fafafa;
+            --gray-100: #f5f5f5;
+            --gray-200: #e8eaed;
+            --gray-300: #dadce0;
+            --gray-400: #bdc1c6;
+            --gray-500: #9aa0a6;
+            --gray-600: #80868b;
+            --gray-700: #5f6368;
+            --gray-800: #3c4043;
+            --gray-900: #202124;
+            --text-primary: #202124;
+            --text-secondary: #5f6368;
+            --success-color: #34a853;
+            --error-color: #ea4335;
+            --warning-color: #fbbc04;
+            --info-color: #1a73e8;
+            --shadow-sm: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+            --shadow-md: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 2px 6px 2px rgba(60, 64, 67, 0.15);
+            --shadow-lg: 0 2px 4px 0 rgba(60, 64, 67, 0.3), 0 8px 12px 6px rgba(60, 64, 67, 0.15);
+            --border-radius: 8px;
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Google Sans', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--gray-50);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.5;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: var(--white);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .back-button {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--white);
+            border: none;
+            padding: 0.75rem 1rem;
+            border-radius: var(--border-radius);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+            transition: var(--transition);
+            backdrop-filter: blur(10px);
+            margin-bottom: 2rem;
+        }
+
+        .back-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .applications-container {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            overflow: hidden;
+        }
+
+        .container-header {
+            background: var(--primary-color);
+            color: var(--white);
+            padding: 1.5rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .container-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .refresh-btn {
+            background: rgba(255, 255, 255, 0.2);
+            color: var(--white);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .refresh-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .applications-content {
+            padding: 2rem;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        .application-card {
+            background: var(--white);
+            border: 1px solid var(--gray-200);
+            border-radius: var(--border-radius);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            transition: var(--transition);
+        }
+
+        .application-card:hover {
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-color);
+        }
+
+        .application-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .application-info h3 {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 0.25rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .application-id {
+            font-size: 0.85rem;
+            color: var(--gray-500);
+            font-family: 'Monaco', 'Menlo', monospace;
+            background: var(--gray-100);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .status-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-pending {
+            background: var(--warning-color);
+            color: var(--white);
+        }
+
+        .status-accepted {
+            background: var(--success-color);
+            color: var(--white);
+        }
+
+        .status-rejected {
+            background: var(--danger-color);
+            color: var(--white);
+        }
+
+        .application-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .detail-item {
+            background: var(--gray-50);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            border-left: 3px solid var(--primary-color);
+        }
+
+        .detail-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--gray-600);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-bottom: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .detail-value {
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--dark-color);
+        }
+
+        .action-buttons {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: var(--transition);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-secondary {
+            background: var(--white);
+            color: var(--primary-color);
+            border: 1px solid var(--gray-300);
+        }
+
+        .btn-secondary:hover {
+            background: var(--gray-50);
+            border-color: var(--primary-color);
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: var(--gray-500);
+        }
+
+        .empty-icon {
+            font-size: 4rem;
+            color: var(--gray-300);
+            margin-bottom: 1rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 3rem;
+            color: var(--gray-500);
+            font-size: 1.1rem;
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--gray-200);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 0.5rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 1rem;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .application-header {
+                flex-direction: column;
+                gap: 1rem;
+                align-items: flex-start;
+            }
+
+            .application-details {
+                grid-template-columns: 1fr;
+            }
+
+            .action-buttons {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="applicant-portal.html" class="back-button">
+            <i class="fas fa-arrow-left"></i>
+            Back to Portal
+        </a>
+
+        <div class="header">
+            <h1><i class="fas fa-list"></i> My Applications</h1>
+            <p>Track and manage your job applications</p>
+        </div>
+
+        <div class="applications-container">
+            <div class="container-header">
+                <h2 class="container-title">
+                    <i class="fas fa-file-alt"></i>
+                    Your Applications
+                </h2>
+                <button class="refresh-btn" onclick="loadMyApplications()">
+                    <i class="fas fa-sync-alt"></i>
+                    Refresh
+                </button>
+            </div>
+            
+            <div class="applications-content" id="applications-content">
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Loading your applications...
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+            checkAuthAndLoadApplications();
+        });
+
+        async function checkAuthAndLoadApplications() {
+            try {
+                const response = await fetch('/api/auth/session');
+                const result = await response.json();
+                
+                if (result.success && result.user.role === 'APPLICANT') {
+                    currentUser = result.user;
+                    loadMyApplications();
+                } else {
+                    // Redirect to login if not authenticated
+                    window.location.href = 'applicant-portal.html';
+                }
+            } catch (error) {
+                console.error('Auth check error:', error);
+                window.location.href = 'applicant-portal.html';
+            }
+        }
+
+        async function loadMyApplications() {
+            try {
+                showLoadingState();
+                
+                // Get all applications
+                const response = await fetch('/api/job-applications/all');
+                const data = await response.json();
+                
+                // Filter applications by current user (this would need to be enhanced with proper user linking)
+                // For now, we'll show all applications as a demo
+                displayApplications(data.applications || {});
+                
+            } catch (error) {
+                console.error('Failed to load applications:', error);
+                showErrorState();
+            }
+        }
+
+        function showLoadingState() {
+            document.getElementById('applications-content').innerHTML = `
+                <div class="loading">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Loading your applications...
+                </div>
+            `;
+        }
+
+        function showErrorState() {
+            document.getElementById('applications-content').innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-exclamation-triangle empty-icon"></i>
+                    <h3>Failed to load applications</h3>
+                    <p>Please check your connection and try again.</p>
+                    <button class="btn btn-primary" onclick="loadMyApplications()" style="margin-top: 1rem;">
+                        <i class="fas fa-retry"></i>
+                        Retry
+                    </button>
+                </div>
+            `;
+        }
+
+        function displayApplications(applications) {
+            const container = document.getElementById('applications-content');
+            
+            if (Object.keys(applications).length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-inbox empty-icon"></i>
+                        <h3>No Applications Found</h3>
+                        <p>You haven't submitted any job applications yet.</p>
+                        <a href="application-form.html" class="btn btn-primary" style="margin-top: 1rem;">
+                            <i class="fas fa-plus"></i>
+                            Submit New Application
+                        </a>
+                    </div>
+                `;
+                return;
+            }
+            
+            let html = '';
+            
+            Object.entries(applications).forEach(([appId, appData]) => {
+                const status = appData.applicationStatus || 'UNKNOWN';
+                const statusClass = getStatusClass(status);
+                const statusIcon = getStatusIcon(status);
+                
+                html += `
+                    <div class="application-card">
+                        <div class="application-header">
+                            <div class="application-info">
+                                <h3>
+                                    <i class="fas fa-briefcase"></i>
+                                    ${formatPosition(appData.position)} Application
+                                </h3>
+                                <div class="application-id">ID: ${appId}</div>
+                            </div>
+                            <div class="status-badge ${statusClass}">
+                                <i class="${statusIcon}"></i>
+                                ${formatStatus(status)}
+                            </div>
+                        </div>
+                        
+                        <div class="application-details">
+                            <div class="detail-item">
+                                <div class="detail-label">
+                                    <i class="fas fa-user"></i>
+                                    Applicant Name
+                                </div>
+                                <div class="detail-value">${appData.firstName || 'N/A'} ${appData.lastName || ''}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">
+                                    <i class="fas fa-envelope"></i>
+                                    Email Address
+                                </div>
+                                <div class="detail-value">${appData.email || 'N/A'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">
+                                    <i class="fas fa-rupee-sign"></i>
+                                    Expected CTC
+                                </div>
+                                <div class="detail-value">₹${appData.expectedSalaryCTC || 'N/A'} LPA</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">
+                                    <i class="fas fa-calendar-alt"></i>
+                                    Submitted On
+                                </div>
+                                <div class="detail-value">${formatDateTime(appData.submissionTimestamp)}</div>
+                            </div>
+                        </div>
+                        
+                        ${getStatusMessage(status, appData)}
+                        
+                        <div class="action-buttons">
+                            <button class="btn btn-primary" onclick="viewApplicationStatus('${appId}')">
+                                <i class="fas fa-eye"></i>
+                                View Status
+                            </button>
+                            ${status.includes('REJECTED') ? `
+                                <button class="btn btn-secondary" onclick="startNewApplication()">
+                                    <i class="fas fa-plus"></i>
+                                    Apply Again
+                                </button>
+                            ` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+            
+            container.innerHTML = html;
+        }
+
+        function getStatusClass(status) {
+            if (status.includes('REJECTED')) return 'status-rejected';
+            if (status === 'ACCEPTED') return 'status-accepted';
+            return 'status-pending';
+        }
+
+        function getStatusIcon(status) {
+            if (status.includes('REJECTED')) return 'fas fa-times-circle';
+            if (status === 'ACCEPTED') return 'fas fa-check-circle';
+            return 'fas fa-clock';
+        }
+
+        function formatStatus(status) {
+            const statusMap = {
+                'STARTED': 'Application Started',
+                'IN_PROGRESS': 'In Progress',
+                'PENDING_HR_REVIEW': 'Under HR Review',
+                'HR_APPROVED': 'HR Approved - Technical Review',
+                'PENDING_HEAD_HR_REVIEW': 'Final Review Pending',
+                'ACCEPTED': 'Application Accepted',
+                'REJECTED_BY_HR': 'Rejected by HR',
+                'REJECTED_BY_TL_PM': 'Rejected by Technical Team',
+                'REJECTED_BY_HEAD_HR': 'Rejected by Head HR'
+            };
+            return statusMap[status] || status;
+        }
+
+        function formatPosition(position) {
+            if (!position) return 'Job';
+            const positions = {
+                'software-engineer': 'Software Engineer',
+                'senior-software-engineer': 'Senior Software Engineer',
+                'tech-lead': 'Tech Lead',
+                'product-manager': 'Product Manager'
+            };
+            return positions[position] || position;
+        }
+
+        function formatDateTime(dateTimeString) {
+            if (!dateTimeString) return 'N/A';
+            try {
+                const date = new Date(dateTimeString);
+                return date.toLocaleString('en-IN');
+            } catch (e) {
+                return dateTimeString;
+            }
+        }
+
+        function getStatusMessage(status, appData) {
+            if (status.includes('REJECTED')) {
+                let rejectionReason = '';
+                if (appData.hrComments) rejectionReason = appData.hrComments;
+                else if (appData.tlComments) rejectionReason = appData.tlComments;
+                else if (appData.pmComments) rejectionReason = appData.pmComments;
+                else if (appData.headHRComments) rejectionReason = appData.headHRComments;
+                
+                if (rejectionReason) {
+                    return `
+                        <div style="background: #fef2f2; border: 1px solid #fecaca; border-radius: var(--border-radius); padding: 1rem; margin-bottom: 1rem;">
+                            <div style="font-weight: 600; color: var(--danger-color); margin-bottom: 0.5rem;">
+                                <i class="fas fa-info-circle"></i> Rejection Feedback
+                            </div>
+                            <div style="color: var(--gray-700);">${rejectionReason}</div>
+                        </div>
+                    `;
+                }
+            } else if (status === 'ACCEPTED' && appData.offerCTC) {
+                return `
+                    <div style="background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: var(--border-radius); padding: 1rem; margin-bottom: 1rem;">
+                        <div style="font-weight: 600; color: var(--success-color); margin-bottom: 0.5rem;">
+                            <i class="fas fa-trophy"></i> Congratulations!
+                        </div>
+                        <div style="color: var(--gray-700);">You have been selected! Offer CTC: ₹${appData.offerCTC} LPA</div>
+                    </div>
+                `;
+            }
+            return '';
+        }
+
+        function viewApplicationStatus(applicationId) {
+            window.location.href = `application-status.html?id=${applicationId}`;
+        }
+
+        function startNewApplication() {
+            window.location.href = 'application-form.html';
+        }
+    </script>
+</body>
+</html>

@@ -16,69 +16,117 @@
         }
 
         :root {
-            --primary-color: #2563eb;
-            --primary-dark: #1d4ed8;
-            --secondary-color: #3b82f6;
-            --accent-color: #60a5fa;
-            --success-color: #10b981;
-            --warning-color: #f59e0b;
-            --danger-color: #ef4444;
-            --info-color: #06b6d4;
-            --dark-color: #1f2937;
-            --light-color: #f8fafc;
+            --primary-color: #1a73e8;
+            --primary-hover: #1557b0;
+            --secondary-color: #5f6368;
+            --accent-color: #34a853;
+            --accent-hover: #2d8f47;
             --white: #ffffff;
-            --gray-50: #f9fafb;
-            --gray-100: #f3f4f6;
-            --gray-200: #e5e7eb;
-            --gray-300: #d1d5db;
-            --gray-500: #6b7280;
-            --gray-600: #4b5563;
-            --gray-700: #374151;
-            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --gray-50: #fafafa;
+            --gray-100: #f5f5f5;
+            --gray-200: #e8eaed;
+            --gray-300: #dadce0;
+            --gray-400: #bdc1c6;
+            --gray-500: #9aa0a6;
+            --gray-600: #80868b;
+            --gray-700: #5f6368;
+            --gray-800: #3c4043;
+            --gray-900: #202124;
+            --text-primary: #202124;
+            --text-secondary: #5f6368;
+            --success-color: #34a853;
+            --error-color: #ea4335;
+            --warning-color: #fbbc04;
+            --info-color: #1a73e8;
+            --shadow-sm: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+            --shadow-md: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 2px 6px 2px rgba(60, 64, 67, 0.15);
+            --shadow-lg: 0 2px 4px 0 rgba(60, 64, 67, 0.3), 0 8px 12px 6px rgba(60, 64, 67, 0.15);
             --border-radius: 8px;
-            --transition: all 0.2s ease;
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background-color: var(--gray-50);
+            font-family: 'Google Sans', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
             min-height: 100vh;
-            color: var(--dark-color);
-            line-height: 1.6;
+            color: var(--text-primary);
+            line-height: 1.5;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(26, 115, 232, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(52, 168, 83, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
         }
 
         .dashboard-container {
             min-height: 100vh;
-            padding: 2rem;
+            padding: 1rem 2rem;
             max-width: 1400px;
             margin: 0 auto;
+            display: flex;
+            flex-direction: column;
         }
 
         .dashboard-header {
-            background: var(--white);
+            background: rgba(255, 255, 255, 0.95);
             border-radius: var(--border-radius);
-            padding: 2rem;
-            margin-bottom: 2rem;
-            box-shadow: var(--shadow-md);
+            padding: 1.5rem 2rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-lg);
             text-align: center;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--gray-200);
+            position: relative;
+        }
+
+        .dashboard-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--accent-color));
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+        }
+
+        .header-actions {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: flex;
+            gap: 0.5rem;
         }
 
         .dashboard-title {
-            font-size: 2.5rem;
-            font-weight: 700;
-            color: var(--primary-color);
+            font-size: 1.75rem;
+            font-weight: 500;
+            color: var(--text-primary);
             margin-bottom: 0.5rem;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 0.75rem;
+            letter-spacing: -0.25px;
+        }
+
+        .dashboard-title i {
+            color: var(--primary-color);
         }
 
         .dashboard-subtitle {
-            font-size: 1.1rem;
-            color: var(--gray-600);
+            font-size: 1rem;
+            color: var(--text-secondary);
             font-weight: 400;
             margin-bottom: 1.5rem;
         }
@@ -187,8 +235,8 @@
         }
 
         .applications-container {
-            padding: 2rem;
-            max-height: 70vh;
+            padding: 1.5rem;
+            max-height: 50vh;
             overflow-y: auto;
         }
 
@@ -421,11 +469,185 @@
         .applications-container::-webkit-scrollbar-thumb:hover {
             background: var(--primary-dark);
         }
+
+        /* Approval Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+
+        .modal {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .modal-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--dark-color);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--gray-500);
+            cursor: pointer;
+            padding: 0.5rem;
+            border-radius: 50%;
+            transition: var(--transition);
+        }
+
+        .modal-close:hover {
+            background: var(--gray-100);
+            color: var(--dark-color);
+        }
+
+        .modal-body {
+            margin-bottom: 2rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--gray-300);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: 1rem;
+            justify-content: flex-end;
+        }
+
+        .btn-success {
+            background: var(--success-color);
+            color: var(--white);
+        }
+
+        .btn-success:hover {
+            background: #059669;
+        }
+
+        .btn-danger {
+            background: var(--danger-color);
+            color: var(--white);
+        }
+
+        .btn-danger:hover {
+            background: #dc2626;
+        }
+
+        .comments-section {
+            background: var(--gray-50);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 1.5rem;
+            border-left: 3px solid var(--info-color);
+        }
+
+        .comments-text {
+            font-style: italic;
+            color: var(--gray-700);
+            margin-top: 0.5rem;
+        }
+
+        .decision-display {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .decision-badge {
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .decision-approved {
+            background: var(--success-color);
+            color: var(--white);
+        }
+
+        .decision-onboarding {
+            background: var(--primary-color);
+            color: var(--white);
+        }
+
+        .decision-rejected {
+            background: var(--danger-color);
+            color: var(--white);
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--gray-200);
+            border-radius: 50%;
+            border-top-color: var(--white);
+            animation: spin 1s ease-in-out infinite;
+        }
     </style>
 </head>
 <body>
     <div class="dashboard-container">
         <header class="dashboard-header">
+            <div class="header-actions">
+                <a href="approval-portal.html" class="btn btn-secondary">
+                    <i class="fas fa-arrow-left"></i>
+                    Back to Portal
+                </a>
+                <button class="btn btn-danger" onclick="logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+            
             <h1 class="dashboard-title">
                 <i class="fas fa-users-cog"></i>
                 HR Dashboard
@@ -437,9 +659,9 @@
                     <i class="fas fa-sync-alt"></i>
                     Refresh Applications
                 </button>
-                <a href="/camunda/app/tasklist/default/" target="_blank" class="btn btn-secondary">
-                    <i class="fas fa-tasks"></i>
-                    Open Tasklist
+                <a href="/camunda/app/cockpit/default/" target="_blank" class="btn btn-secondary">
+                    <i class="fas fa-chart-line"></i>
+                    View Workflow Progress
                 </a>
             </div>
         </header>
@@ -468,24 +690,31 @@
         <div class="camunda-section">
             <h3 class="section-title">
                 <i class="fas fa-cogs"></i>
-                Camunda Workflow Tools
+                Camunda Workflow Monitoring
             </h3>
             <div class="camunda-grid">
-                <a href="/camunda/app/tasklist/default/" target="_blank" class="camunda-link">
-                    <i class="fas fa-tasks"></i>
-                    Camunda Tasklist
-                    <small style="display: block; font-size: 0.8rem; opacity: 0.8;">Review and complete tasks</small>
-                </a>
                 <a href="/camunda/app/cockpit/default/" target="_blank" class="camunda-link">
                     <i class="fas fa-tachometer-alt"></i>
                     Camunda Cockpit
-                    <small style="display: block; font-size: 0.8rem; opacity: 0.8;">Monitor process instances</small>
+                    <small style="display: block; font-size: 0.8rem; opacity: 0.8;">Monitor process instances and workflow progress</small>
                 </a>
             </div>
         </div>
     </div>
 
     <script>
+        // Logout function
+        async function logout() {
+            try {
+                await fetch('/api/auth/logout', { method: 'POST' });
+                window.location.href = 'approval-portal.html';
+            } catch (error) {
+                console.error('Logout error:', error);
+                // Force logout on client side
+                window.location.href = 'approval-portal.html';
+            }
+        }
+
         let applicationStats = {
             total: 0,
             pending: 0,
@@ -542,15 +771,30 @@
 
             Object.values(applications).forEach(app => {
                 const status = app.applicationStatus || 'UNKNOWN';
+                const hrDecision = app.hrDecision;
+                
                 switch(status) {
                     case 'PENDING_HR_REVIEW':
                         applicationStats.pending++;
                         break;
+                    case 'HR_APPROVED':
                     case 'ACCEPTED':
                         applicationStats.accepted++;
                         break;
-                    case 'REJECTED':
+                    case 'REJECTED_BY_HR':
+                    case 'REJECTED_BY_TL_PM':
+                    case 'REJECTED_BY_HEAD_HR':
                         applicationStats.rejected++;
+                        break;
+                    default:
+                        // Check HR decision for applications that might not have updated status yet
+                        if (hrDecision === 'accept') {
+                            applicationStats.accepted++;
+                        } else if (hrDecision === 'reject') {
+                            applicationStats.rejected++;
+                        } else {
+                            applicationStats.pending++;
+                        }
                         break;
                 }
             });
@@ -604,6 +848,7 @@
                 const status = appData.applicationStatus || 'UNKNOWN';
                 const statusClass = getStatusClass(status);
                 const statusIcon = getStatusIcon(status);
+                const hrDecision = appData.hrDecision;
                 
                 html += `
                     <div class="application-card">
@@ -617,7 +862,7 @@
                             </div>
                             <div class="status-badge ${statusClass}">
                                 <i class="${statusIcon}"></i>
-                                ${formatStatus(status)}
+                                ${formatStatus(status, hrDecision)}
                             </div>
                         </div>
                         
@@ -635,6 +880,20 @@
                                     Mobile Number
                                 </div>
                                 <div class="detail-value">${appData.mobileNumber || 'N/A'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">
+                                    <i class="fas fa-birthday-cake"></i>
+                                    Date of Birth
+                                </div>
+                                <div class="detail-value">${formatDate(appData.dateOfBirth)}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">
+                                    <i class="fas fa-venus-mars"></i>
+                                    Gender
+                                </div>
+                                <div class="detail-value">${formatGender(appData.gender)}</div>
                             </div>
                             <div class="detail-item">
                                 <div class="detail-label">
@@ -664,19 +923,77 @@
                                 </div>
                                 <div class="detail-value">${formatEducation(appData.highestEducation)}</div>
                             </div>
+                            <div class="detail-item">
+                                <div class="detail-label">
+                                    <i class="fas fa-clock"></i>
+                                    Notice Period
+                                </div>
+                                <div class="detail-value">${formatNoticePeriod(appData.noticePeriod)}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">
+                                    <i class="fas fa-tools"></i>
+                                    Skills
+                                </div>
+                                <div class="detail-value">${appData.skills || 'N/A'}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">
+                                    <i class="fas fa-calendar-check"></i>
+                                    Submitted On
+                                </div>
+                                <div class="detail-value">${formatDateTime(appData.submissionTimestamp)}</div>
+                            </div>
+                            <div class="detail-item">
+                                <div class="detail-label">
+                                    <i class="fas fa-sync-alt"></i>
+                                    Last Updated
+                                </div>
+                                <div class="detail-value">${formatDateTime(appData.lastUpdatedTimestamp)}</div>
+                            </div>
                         </div>
+                        
+                        ${appData.hrComments ? `
+                            <div class="comments-section">
+                                <div class="detail-label">
+                                    <i class="fas fa-comment"></i>
+                                    HR Comments
+                                </div>
+                                <div class="comments-text">${appData.hrComments}</div>
+                            </div>
+                        ` : ''}
                         
                         <div class="action-buttons">
                             ${status === 'PENDING_HR_REVIEW' ? `
-                                <a href="/camunda/app/tasklist/default/" target="_blank" class="camunda-link">
-                                    <i class="fas fa-eye"></i>
-                                    Review in Camunda Tasklist
-                                </a>
+                                <button class="btn btn-success" onclick="showApprovalModal('${appId}', 'approve')">
+                                    <i class="fas fa-check"></i>
+                                    Approve Application
+                                </button>
+                                <button class="btn btn-danger" onclick="showApprovalModal('${appId}', 'reject')">
+                                    <i class="fas fa-times"></i>
+                                    Reject Application
+                                </button>
+                            ` : status === 'COMPANY_MANAGER_APPROVED' ? `
+                                <button class="btn btn-primary" onclick="showOnboardingModal('${appId}')">
+                                    <i class="fas fa-user-plus"></i>
+                                    Proceed with Onboarding
+                                </button>
+                                <button class="btn btn-danger" onclick="showApprovalModal('${appId}', 'reject')">
+                                    <i class="fas fa-times"></i>
+                                    Reject Application
+                                </button>
+                            ` : hrDecision ? `
+                                <div class="decision-display">
+                                    <span class="decision-badge ${hrDecision === 'accept' ? 'decision-approved' : hrDecision === 'onboarding' ? 'decision-onboarding' : 'decision-rejected'}">
+                                        <i class="fas fa-${hrDecision === 'accept' ? 'check' : hrDecision === 'onboarding' ? 'user-plus' : 'times'}"></i>
+                                        ${hrDecision === 'accept' ? 'Approved by You' : hrDecision === 'onboarding' ? 'Onboarding Initiated by You' : 'Rejected by You'}
+                                    </span>
+                                </div>
                             ` : ''}
-                            <a href="/api/job-applications/${appId}/hr-summary" target="_blank" class="btn btn-secondary">
-                                <i class="fas fa-file-alt"></i>
-                                View Details
-                            </a>
+                            <button class="btn btn-secondary" onclick="viewApplicationDetails('${appId}')">
+                                <i class="fas fa-eye"></i>
+                                View Full Details
+                            </button>
                         </div>
                     </div>
                 `;
@@ -688,8 +1005,11 @@
         function getStatusClass(status) {
             switch(status) {
                 case 'PENDING_HR_REVIEW': return 'status-pending';
+                case 'HR_APPROVED':
                 case 'ACCEPTED': return 'status-accepted';
-                case 'REJECTED': return 'status-rejected';
+                case 'REJECTED_BY_HR':
+                case 'REJECTED_BY_TL_PM':
+                case 'REJECTED_BY_HEAD_HR': return 'status-rejected';
                 default: return 'status-pending';
             }
         }
@@ -697,17 +1017,26 @@
         function getStatusIcon(status) {
             switch(status) {
                 case 'PENDING_HR_REVIEW': return 'fas fa-clock';
+                case 'HR_APPROVED':
                 case 'ACCEPTED': return 'fas fa-check-circle';
-                case 'REJECTED': return 'fas fa-times-circle';
+                case 'REJECTED_BY_HR':
+                case 'REJECTED_BY_TL_PM':
+                case 'REJECTED_BY_HEAD_HR': return 'fas fa-times-circle';
                 default: return 'fas fa-question-circle';
             }
         }
 
-        function formatStatus(status) {
+        function formatStatus(status, hrDecision) {
+            if (hrDecision) {
+                return hrDecision === 'accept' ? 'Approved by HR' : 'Rejected by HR';
+            }
             switch(status) {
                 case 'PENDING_HR_REVIEW': return 'Pending Review';
-                case 'ACCEPTED': return 'Accepted';
-                case 'REJECTED': return 'Rejected';
+                case 'HR_APPROVED': return 'Approved by HR';
+                case 'ACCEPTED': return 'Final Acceptance';
+                case 'REJECTED_BY_HR': return 'Rejected by HR';
+                case 'REJECTED_BY_TL_PM': return 'Rejected by TL/PM';
+                case 'REJECTED_BY_HEAD_HR': return 'Rejected by Head HR';
                 default: return status;
             }
         }
@@ -741,6 +1070,308 @@
             };
             return educations[education] || education;
         }
+
+        function formatGender(gender) {
+            if (!gender) return 'N/A';
+            const genders = {
+                'male': 'Male',
+                'female': 'Female',
+                'transgender': 'Transgender',
+                'prefer-not-to-say': 'Prefer not to say'
+            };
+            return genders[gender] || gender;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString) return 'N/A';
+            try {
+                const date = new Date(dateString);
+                return date.toLocaleDateString('en-IN');
+            } catch (e) {
+                return dateString;
+            }
+        }
+
+        function formatDateTime(dateTimeString) {
+            if (!dateTimeString) return 'N/A';
+            try {
+                const date = new Date(dateTimeString);
+                return date.toLocaleString('en-IN');
+            } catch (e) {
+                return dateTimeString;
+            }
+        }
+
+        function formatNoticePeriod(noticePeriod) {
+            if (!noticePeriod) return 'N/A';
+            const periods = {
+                'immediate': 'Immediate',
+                '15-days': '15 Days',
+                '1-month': '1 Month',
+                '2-months': '2 Months'
+            };
+            return periods[noticePeriod] || noticePeriod;
+        }
+
+        // Approval Modal Functions
+        function showApprovalModal(applicationId, action) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h3 class="modal-title">
+                            <i class="fas fa-${action === 'approve' ? 'check' : 'times'}"></i>
+                            ${action === 'approve' ? 'Approve' : 'Reject'} Application
+                        </h3>
+                        <button class="modal-close" onclick="closeModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>Application ID:</strong> ${applicationId}</p>
+                        <div class="form-group">
+                            <label class="form-label" for="comments">Comments (Optional):</label>
+                            <textarea 
+                                id="comments" 
+                                class="form-control" 
+                                rows="4" 
+                                placeholder="Add your review comments here..."
+                            ></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                        <button 
+                            class="btn ${action === 'approve' ? 'btn-success' : 'btn-danger'}" 
+                            onclick="submitDecision('${applicationId}', '${action}')"
+                        >
+                            <i class="fas fa-${action === 'approve' ? 'check' : 'times'}"></i>
+                            ${action === 'approve' ? 'Approve' : 'Reject'}
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Focus on comments textarea
+            setTimeout(() => {
+                document.getElementById('comments').focus();
+            }, 100);
+        }
+
+        function closeModal() {
+            const modal = document.querySelector('.modal-overlay');
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        async function submitDecision(applicationId, action) {
+            const comments = document.getElementById('comments').value.trim();
+            const submitButton = document.querySelector('.modal-actions .btn-success, .modal-actions .btn-danger');
+            
+            // Show loading state
+            submitButton.disabled = true;
+            submitButton.innerHTML = `
+                <span class="loading-spinner"></span>
+                Processing...
+            `;
+            
+            try {
+                const endpoint = action === 'approve' ? 'approve' : 'reject';
+                const response = await fetch(`/api/job-applications/${applicationId}/${endpoint}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        role: 'hr',
+                        comments: comments
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    closeModal();
+                    showNotification(`Application ${action}ed successfully!`, 'success');
+                    // Refresh applications to show updated status
+                    loadApplications();
+                } else {
+                    throw new Error(result.error || 'Failed to process decision');
+                }
+                
+            } catch (error) {
+                console.error('Failed to submit decision:', error);
+                showNotification(`Failed to ${action} application: ${error.message}`, 'error');
+                
+                // Reset button state
+                submitButton.disabled = false;
+                submitButton.innerHTML = `
+                    <i class="fas fa-${action === 'approve' ? 'check' : 'times'}"></i>
+                    ${action === 'approve' ? 'Approve' : 'Reject'}
+                `;
+            }
+        }
+
+        // Onboarding Modal Function
+        function showOnboardingModal(applicationId) {
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h3 class="modal-title">
+                            <i class="fas fa-user-plus"></i>
+                            Proceed with Onboarding
+                        </h3>
+                        <button class="modal-close" onclick="closeModal()">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>Application ID:</strong> ${applicationId}</p>
+                        <div class="form-group">
+                            <label for="joiningDate">Expected Joining Date:</label>
+                            <input type="date" id="joiningDate" class="form-control" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="reportingManager">Reporting Manager:</label>
+                            <input type="text" id="reportingManager" class="form-control" placeholder="Enter reporting manager name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="department">Department:</label>
+                            <input type="text" id="department" class="form-control" placeholder="Enter department" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="onboardingComments">HR Onboarding Comments:</label>
+                            <textarea id="onboardingComments" class="form-control" rows="4" placeholder="Enter your onboarding comments..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-actions">
+                        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
+                        <button 
+                            class="btn btn-primary" 
+                            onclick="submitOnboardingDecision('${applicationId}')"
+                        >
+                            <i class="fas fa-user-plus"></i>
+                            Proceed with Onboarding
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Focus on joining date input
+            setTimeout(() => {
+                document.getElementById('joiningDate').focus();
+            }, 100);
+        }
+
+        async function submitOnboardingDecision(applicationId) {
+            const joiningDate = document.getElementById('joiningDate').value;
+            const reportingManager = document.getElementById('reportingManager').value.trim();
+            const department = document.getElementById('department').value.trim();
+            const comments = document.getElementById('onboardingComments').value.trim();
+            const submitButton = document.querySelector('.modal-actions .btn-primary');
+            
+            // Validate required fields
+            if (!joiningDate || !reportingManager || !department) {
+                showNotification('Please fill in all required fields', 'error');
+                return;
+            }
+            
+            // Show loading state
+            submitButton.disabled = true;
+            submitButton.innerHTML = `
+                <span class="loading-spinner"></span>
+                Processing...
+            `;
+            
+            try {
+                const response = await fetch(`/api/job-applications/${applicationId}/hr-onboarding`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        hrDecision: 'onboarding',
+                        joiningDate: joiningDate,
+                        reportingManager: reportingManager,
+                        department: department,
+                        hrComments: comments
+                    })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    closeModal();
+                    showNotification('Onboarding process initiated successfully!', 'success');
+                    // Refresh applications to show updated status
+                    loadApplications();
+                } else {
+                    throw new Error(result.error || 'Failed to initiate onboarding');
+                }
+                
+            } catch (error) {
+                console.error('Failed to submit onboarding decision:', error);
+                showNotification(`Failed to initiate onboarding: ${error.message}`, 'error');
+                
+                // Reset button state
+                submitButton.disabled = false;
+                submitButton.innerHTML = `
+                    <i class="fas fa-user-plus"></i>
+                    Proceed with Onboarding
+                `;
+            }
+        }
+
+        function showNotification(message, type) {
+            const notification = document.createElement('div');
+            notification.className = `notification notification-${type}`;
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: ${type === 'success' ? 'var(--success-color)' : 'var(--danger-color)'};
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: var(--border-radius);
+                box-shadow: var(--shadow-lg);
+                z-index: 1001;
+                animation: slideIn 0.3s ease;
+            `;
+            notification.innerHTML = `
+                <i class="fas fa-${type === 'success' ? 'check-circle' : 'exclamation-circle'}"></i>
+                ${message}
+            `;
+            
+            document.body.appendChild(notification);
+            
+            // Remove after 5 seconds
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 5000);
+        }
+
+        function viewApplicationDetails(applicationId) {
+            window.open(`/api/job-applications/${applicationId}/hr-summary`, '_blank');
+        }
+
+        // Add CSS animations for notifications
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
 
         function updateLastUpdated() {
             const now = new Date();

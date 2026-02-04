@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approval Dashboards - Job Recruitment</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #1a73e8;
+            --primary-hover: #1557b0;
+            --secondary-color: #5f6368;
+            --accent-color: #34a853;
+            --accent-hover: #2d8f47;
+            --white: #ffffff;
+            --gray-50: #fafafa;
+            --gray-100: #f5f5f5;
+            --gray-200: #e8eaed;
+            --gray-300: #dadce0;
+            --gray-400: #bdc1c6;
+            --gray-500: #9aa0a6;
+            --gray-600: #80868b;
+            --gray-700: #5f6368;
+            --gray-800: #3c4043;
+            --gray-900: #202124;
+            --text-primary: #202124;
+            --text-secondary: #5f6368;
+            --success-color: #34a853;
+            --error-color: #ea4335;
+            --warning-color: #fbbc04;
+            --purple-color: #9c27b0;
+            --shadow-sm: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+            --shadow-md: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 2px 6px 2px rgba(60, 64, 67, 0.15);
+            --shadow-lg: 0 2px 4px 0 rgba(60, 64, 67, 0.3), 0 8px 12px 6px rgba(60, 64, 67, 0.15);
+            --border-radius: 8px;
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Google Sans', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: var(--gray-50);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.5;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            color: var(--white);
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .dashboards-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .dashboard-card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+            transition: var(--transition);
+            text-decoration: none;
+            color: var(--dark-color);
+            border-left: 4px solid;
+        }
+
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+        }
+
+        .dashboard-card.hr {
+            border-left-color: var(--primary-color);
+        }
+
+        .dashboard-card.teamlead {
+            border-left-color: var(--purple-color);
+        }
+
+        .dashboard-card.projectmanager {
+            border-left-color: var(--success-color);
+        }
+
+        .dashboard-card.headhr {
+            border-left-color: var(--danger-color);
+        }
+
+        .dashboard-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .dashboard-card.hr .dashboard-icon {
+            color: var(--primary-color);
+        }
+
+        .dashboard-card.teamlead .dashboard-icon {
+            color: var(--purple-color);
+        }
+
+        .dashboard-card.projectmanager .dashboard-icon {
+            color: var(--success-color);
+        }
+
+        .dashboard-card.headhr .dashboard-icon {
+            color: var(--danger-color);
+        }
+
+        .dashboard-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .dashboard-description {
+            color: var(--gray-600);
+            margin-bottom: 1.5rem;
+        }
+
+        .dashboard-features {
+            list-style: none;
+        }
+
+        .dashboard-features li {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.9rem;
+            color: var(--gray-600);
+        }
+
+        .dashboard-features li i {
+            color: var(--success-color);
+        }
+
+        .workflow-section {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+            margin-bottom: 2rem;
+        }
+
+        .workflow-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .workflow-steps {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .workflow-step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+            flex: 1;
+            min-width: 150px;
+        }
+
+        .step-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--white);
+            margin-bottom: 0.5rem;
+        }
+
+        .step-icon.hr {
+            background: var(--primary-color);
+        }
+
+        .step-icon.parallel {
+            background: var(--warning-color);
+        }
+
+        .step-icon.headhr {
+            background: var(--danger-color);
+        }
+
+        .step-title {
+            font-weight: 600;
+            margin-bottom: 0.25rem;
+        }
+
+        .step-description {
+            font-size: 0.8rem;
+            color: var(--gray-600);
+        }
+
+        .arrow {
+            font-size: 1.5rem;
+            color: var(--gray-600);
+        }
+
+        .utilities-section {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .utilities-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .utility-link {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 1rem;
+            background: var(--gray-50);
+            border-radius: var(--border-radius);
+            text-decoration: none;
+            color: var(--dark-color);
+            transition: var(--transition);
+        }
+
+        .utility-link:hover {
+            background: var(--gray-100);
+            transform: translateY(-2px);
+        }
+
+        .utility-icon {
+            font-size: 1.5rem;
+            color: var(--primary-color);
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .dashboards-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .workflow-steps {
+                flex-direction: column;
+            }
+
+            .arrow {
+                transform: rotate(90deg);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-tachometer-alt"></i> Approval Dashboards</h1>
+            <p>Complete recruitment workflow management - All decisions made in frontend</p>
+        </div>
+
+        <div class="dashboards-grid">
+            <a href="hr-dashboard.html" class="dashboard-card hr">
+                <div class="dashboard-icon">
+                    <i class="fas fa-users-cog"></i>
+                </div>
+                <h3 class="dashboard-title">HR Dashboard</h3>
+                <p class="dashboard-description">Initial screening and approval gateway</p>
+                <ul class="dashboard-features">
+                    <li><i class="fas fa-check"></i> Complete application details</li>
+                    <li><i class="fas fa-check"></i> Direct approve/reject buttons</li>
+                    <li><i class="fas fa-check"></i> Real-time status updates</li>
+                    <li><i class="fas fa-check"></i> Comment system</li>
+                </ul>
+            </a>
+
+            <a href="teamlead-dashboard.html" class="dashboard-card teamlead">
+                <div class="dashboard-icon">
+                    <i class="fas fa-code"></i>
+                </div>
+                <h3 class="dashboard-title">Team Lead Dashboard</h3>
+                <p class="dashboard-description">Technical assessment and skills evaluation</p>
+                <ul class="dashboard-features">
+                    <li><i class="fas fa-check"></i> HR-approved applications</li>
+                    <li><i class="fas fa-check"></i> Technical skills review</li>
+                    <li><i class="fas fa-check"></i> Parallel approval process</li>
+                    <li><i class="fas fa-check"></i> Previous reviewer comments</li>
+                </ul>
+            </a>
+
+            <a href="projectmanager-dashboard.html" class="dashboard-card projectmanager">
+                <div class="dashboard-icon">
+                    <i class="fas fa-project-diagram"></i>
+                </div>
+                <h3 class="dashboard-title">Project Manager Dashboard</h3>
+                <p class="dashboard-description">Project fit assessment and resource planning</p>
+                <ul class="dashboard-features">
+                    <li><i class="fas fa-check"></i> HR-approved applications</li>
+                    <li><i class="fas fa-check"></i> Project alignment review</li>
+                    <li><i class="fas fa-check"></i> Parallel approval process</li>
+                    <li><i class="fas fa-check"></i> Team fit evaluation</li>
+                </ul>
+            </a>
+
+            <a href="headhr-dashboard.html" class="dashboard-card headhr">
+                <div class="dashboard-icon">
+                    <i class="fas fa-crown"></i>
+                </div>
+                <h3 class="dashboard-title">Head HR Dashboard</h3>
+                <p class="dashboard-description">Final hiring decisions and offer management</p>
+                <ul class="dashboard-features">
+                    <li><i class="fas fa-check"></i> Fully approved applications</li>
+                    <li><i class="fas fa-check"></i> All previous approvals visible</li>
+                    <li><i class="fas fa-check"></i> Offer CTC specification</li>
+                    <li><i class="fas fa-check"></i> Final hiring authority</li>
+                </ul>
+            </a>
+        </div>
+
+        <div class="workflow-section">
+            <h3 class="workflow-title">
+                <i class="fas fa-sitemap"></i>
+                Approval Workflow Process
+            </h3>
+            <div class="workflow-steps">
+                <div class="workflow-step">
+                    <div class="step-icon hr">
+                        <i class="fas fa-user-tie"></i>
+                    </div>
+                    <div class="step-title">HR Review</div>
+                    <div class="step-description">Initial screening & approval</div>
+                </div>
+                
+                <div class="arrow">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                
+                <div class="workflow-step">
+                    <div class="step-icon parallel">
+                        <i class="fas fa-code-branch"></i>
+                    </div>
+                    <div class="step-title">Parallel Review</div>
+                    <div class="step-description">Team Lead + Project Manager</div>
+                </div>
+                
+                <div class="arrow">
+                    <i class="fas fa-arrow-right"></i>
+                </div>
+                
+                <div class="workflow-step">
+                    <div class="step-icon headhr">
+                        <i class="fas fa-crown"></i>
+                    </div>
+                    <div class="step-title">Final Decision</div>
+                    <div class="step-description">Head HR hiring decision</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="utilities-section">
+            <h3 class="workflow-title">
+                <i class="fas fa-tools"></i>
+                Utilities & Monitoring
+            </h3>
+            <div class="utilities-grid">
+                <a href="/" class="utility-link">
+                    <i class="fas fa-plus-circle utility-icon"></i>
+                    <div>
+                        <div style="font-weight: 600;">New Application</div>
+                        <div style="font-size: 0.8rem; color: var(--gray-600);">Submit job application</div>
+                    </div>
+                </a>
+                
+                <a href="application-status.html" class="utility-link">
+                    <i class="fas fa-search utility-icon"></i>
+                    <div>
+                        <div style="font-weight: 600;">Check Status</div>
+                        <div style="font-size: 0.8rem; color: var(--gray-600);">Track application progress</div>
+                    </div>
+                </a>
+                
+                <a href="/camunda/app/cockpit/default/" target="_blank" class="utility-link">
+                    <i class="fas fa-chart-line utility-icon"></i>
+                    <div>
+                        <div style="font-weight: 600;">Camunda Cockpit</div>
+                        <div style="font-size: 0.8rem; color: var(--gray-600);">Monitor workflow progress</div>
+                    </div>
+                </a>
+                
+                <a href="/api/job-applications/all" target="_blank" class="utility-link">
+                    <i class="fas fa-database utility-icon"></i>
+                    <div>
+                        <div style="font-weight: 600;">API Data</div>
+                        <div style="font-size: 0.8rem; color: var(--gray-600);">View raw application data</div>
+                    </div>
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

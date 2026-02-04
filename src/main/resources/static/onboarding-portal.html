@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Onboarding Portal</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css?v=3.0">
+</head>
+<body>
+    <div class="container">
+        <div class="portal-container">
+            <div class="portal-header">
+                <h1><i class="fas fa-user-plus"></i> Candidate Onboarding Portal</h1>
+                <p>Welcome to the onboarding process. Please enter your application ID to continue.</p>
+            </div>
+
+            <div class="portal-form">
+                <div class="form-group">
+                    <label for="applicationId">Application ID</label>
+                    <input type="text" id="applicationId" placeholder="Enter your application ID (e.g., APP-1234567890-ABCD1234)" 
+                           style="text-transform: uppercase;">
+                    <small>You should have received this ID via email after your application was approved for onboarding</small>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="btn btn-primary" onclick="proceedToOnboarding()">
+                        <i class="fas fa-arrow-right"></i> Proceed to Onboarding
+                    </button>
+                </div>
+            </div>
+
+            <div class="portal-info">
+                <h3><i class="fas fa-info-circle"></i> What you'll need:</h3>
+                <ul>
+                    <li><i class="fas fa-id-card"></i> Aadhar Number (12 digits)</li>
+                    <li><i class="fas fa-credit-card"></i> PAN Number</li>
+                    <li><i class="fas fa-university"></i> Bank Account Details (Account Number, IFSC Code)</li>
+                    <li><i class="fas fa-phone"></i> Emergency Contact Information</li>
+                    <li><i class="fas fa-home"></i> Current and Permanent Address</li>
+                    <li><i class="fas fa-heartbeat"></i> Blood Group (Optional)</li>
+                </ul>
+            </div>
+
+            <div class="portal-help">
+                <h3><i class="fas fa-question-circle"></i> Need Help?</h3>
+                <p>If you don't have your application ID or are facing any issues, please contact HR at:</p>
+                <div class="contact-info">
+                    <div><i class="fas fa-envelope"></i> hr@company.com</div>
+                    <div><i class="fas fa-phone"></i> +91-XXXX-XXXX-XX</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function proceedToOnboarding() {
+            const applicationId = document.getElementById('applicationId').value.trim().toUpperCase();
+            
+            if (!applicationId) {
+                showError('Please enter your application ID');
+                return;
+            }
+
+            // Basic validation for application ID format
+            if (!applicationId.match(/^APP-\d+-[A-Z0-9]+$/)) {
+                showError('Please enter a valid application ID format (APP-XXXXXXXXXX-XXXXXXXX)');
+                return;
+            }
+
+            // Verify application exists and is ready for onboarding
+            verifyApplication(applicationId);
+        }
+
+        async function verifyApplication(applicationId) {
+            const button = document.querySelector('.btn-primary');
+            const originalText = button.innerHTML;
+            
+            button.disabled = true;
+            button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Verifying...';
+
+            try {
+                const response = await fetch(`/api/job-applications/${applicationId}/status`);
+                const result = await response.json();
+
+                if (response.ok && result.applicationStatus) {
+                    const status = result.applicationStatus;
+                    
+                    if (status === 'ONBOARDING_INITIATED' || status === 'COMPANY_MANAGER_APPROVED') {
+                        // Redirect to onboarding form
+                        window.location.href = `candidate-onboarding.html?applicationId=${applicationId}`;
+                    } else if (status === 'ONBOARDING_COMPLETED') {
+                        showError('Your onboarding has already been completed.');
+                    } else {
+                        showError('Your application is not yet ready for onboarding. Current status: ' + status);
+                    }
+                } else {
+                    showError('Application not found. Please check your application ID.');
+                }
+
+            } catch (error) {
+                console.error('Failed to verify application:', error);
+                showError('Failed to verify application. Please try again or contact HR.');
+            } finally {
+                button.disabled = false;
+                button.innerHTML = originalText;
+            }
+        }
+
+        function showError(message) {
+            const notification = document.createElement('div');
+            notification.className = 'notification notification-error';
+            notification.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: #ea4335;
+                color: white;
+                padding: 1rem 1.5rem;
+                border-radius: 8px;
+                box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+                z-index: 1000;
+                animation: slideIn 0.3s ease;
+                max-width: 400px;
+            `;
+            notification.innerHTML = `
+                <i class="fas fa-exclamation-circle"></i>
+                ${message}
+            `;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideOut 0.3s ease';
+                setTimeout(() => notification.remove(), 300);
+            }, 5000);
+        }
+
+        // Handle Enter key press
+        document.getElementById('applicationId').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                proceedToOnboarding();
+            }
+        });
+
+        // Add CSS animations and styles
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideIn {
+                from { transform: translateX(100%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes slideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(100%); opacity: 0; }
+            }
+            
+            .portal-container {
+                max-width: 600px;
+                margin: 2rem auto;
+                padding: 2rem;
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            }
+            
+            .portal-header {
+                text-align: center;
+                margin-bottom: 2rem;
+            }
+            
+            .portal-header h1 {
+                color: #1a73e8;
+                margin-bottom: 0.5rem;
+            }
+            
+            .portal-form {
+                margin-bottom: 2rem;
+                padding: 1.5rem;
+                background: #f8fafc;
+                border-radius: 8px;
+                border: 1px solid #e2e8f0;
+            }
+            
+            .portal-info {
+                margin-bottom: 2rem;
+                padding: 1.5rem;
+                background: #e8f5e8;
+                border-radius: 8px;
+                border-left: 4px solid #34a853;
+            }
+            
+            .portal-info h3 {
+                color: #34a853;
+                margin-bottom: 1rem;
+            }
+            
+            .portal-info ul {
+                list-style: none;
+                padding: 0;
+            }
+            
+            .portal-info li {
+                padding: 0.5rem 0;
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+            }
+            
+            .portal-info li i {
+                color: #34a853;
+                width: 20px;
+            }
+            
+            .portal-help {
+                padding: 1.5rem;
+                background: #fff3cd;
+                border-radius: 8px;
+                border-left: 4px solid #ffc107;
+            }
+            
+            .portal-help h3 {
+                color: #856404;
+                margin-bottom: 1rem;
+            }
+            
+            .contact-info {
+                margin-top: 1rem;
+                display: flex;
+                flex-direction: column;
+                gap: 0.5rem;
+            }
+            
+            .contact-info div {
+                display: flex;
+                align-items: center;
+                gap: 0.75rem;
+                color: #856404;
+            }
+            
+            .contact-info i {
+                width: 20px;
+            }
+            
+            @media (max-width: 768px) {
+                .portal-container {
+                    margin: 1rem;
+                    padding: 1rem;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    </script>
+</body>
+</html>

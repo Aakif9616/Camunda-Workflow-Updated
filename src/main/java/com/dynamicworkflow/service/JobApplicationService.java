@@ -36,14 +36,18 @@ public class JobApplicationService {
     private final Map<String, Map<String, Object>> applicationDataStore = new ConcurrentHashMap<>();
     private final Map<String, String> applicationStatusStore = new ConcurrentHashMap<>();
     
+    private final ReferralService referralService;
+    
     public JobApplicationService(ProcessEngine processEngine, 
                                WorkflowDefinitionService workflowDefinitionService,
-                               ValidationService validationService) {
+                               ValidationService validationService,
+                               ReferralService referralService) {
         this.runtimeService = processEngine.getRuntimeService();
         this.taskService = processEngine.getTaskService();
         this.historyService = processEngine.getHistoryService();
         this.workflowDefinitionService = workflowDefinitionService;
         this.validationService = validationService;
+        this.referralService = referralService;
     }
     
     public ApplicationResponse startApplication() {
@@ -139,17 +143,39 @@ public class JobApplicationService {
             applicationData.put("lastUpdatedTimestamp", LocalDateTime.now().toString());
             applicationData.put("lastCompletedStep", currentStepId);
             
-            // Determine next step
+            // Determine next step and check for referral bypass
             String nextStepId = null;
             String status = "IN_PROGRESS";
             
             if (workflowDefinitionService.isLastStep(currentStepId)) {
-                status = "PENDING_HR_REVIEW";
+                // Check if referral ID is provided and valid
+                String referralId = (String) stepData.get("referralId");
+                boolean hasValidReferral = referralId != null && !referralId.trim().isEmpty() && 
+                                         referralService.isValidReferralId(referralId);
+                
+                if (hasValidReferral) {
+                    status = "PENDING_COMPANY_MANAGER_REVIEW";
+                    applicationData.put("referralId", referralId.trim().toUpperCase());
+                    applicationData.put("hasValidReferral", true);
+                    applicationData.put("bypassedApprovals", true);
+                    logger.info("Application {} has valid referral ID: {} - bypassing normal approval process", 
+                               applicationId, referralId);
+                } else {
+                    status = "PENDING_HR_REVIEW";
+                    applicationData.put("hasValidReferral", false);
+                    applicationData.put("bypassedApprovals", false);
+                    if (referralId != null && !referralId.trim().isEmpty()) {
+                        applicationData.put("referralId", referralId.trim().toUpperCase());
+                        applicationData.put("invalidReferralId", true);
+                        logger.warn("Application {} has invalid referral ID: {}", applicationId, referralId);
+                    }
+                }
+                
                 nextStepId = null;
                 applicationData.put("submissionTimestamp", LocalDateTime.now().toString());
-                applicationData.put("applicationStatus", "PENDING_HR_REVIEW");
-                applicationStatusStore.put(applicationId, "PENDING_HR_REVIEW");
-                logger.info("Application {} submitted for HR review", applicationId);
+                applicationData.put("applicationStatus", status);
+                applicationStatusStore.put(applicationId, status);
+                logger.info("Application {} submitted for review with status: {}", applicationId, status);
             } else {
                 Optional<WorkflowStep> nextStep = workflowDefinitionService.getNextStep(currentStepId);
                 if (nextStep.isPresent()) {
@@ -164,33 +190,23 @@ public class JobApplicationService {
             applicationDataStore.put(applicationId, applicationData);
             logger.info("Updated application data: {}", applicationData);
             
-            // Update BPMN Process if exists
-            try {
-                String processInstanceId = (String) applicationData.get("processInstanceId");
-                if (processInstanceId != null) {
-                    // Find and complete current user task
-                    Task currentTask = taskService.createTaskQuery()
-                        .processInstanceId(processInstanceId)
-                        .active()
-                        .singleResult();
-                    
-                    if (currentTask != null) {
-                        // Set task variables and complete
-                        Map<String, Object> taskVariables = new HashMap<>(stepData);
-                        taskVariables.put("stepCompleted", currentStepId);
-                        taskVariables.put("validationResult", true);
-                        
-                        taskService.complete(currentTask.getId(), taskVariables);
-                        logger.info("Completed BPMN task: {} for application: {}", currentTask.getId(), applicationId);
-                    } else {
-                        logger.warn("No active BPMN task found for process instance: {}", processInstanceId);
-                    }
+            // Handle BPMN workflow
+            if (workflowDefinitionService.isLastStep(currentStepId)) {
+                String referralId = (String) stepData.get("referralId");
+                boolean hasValidReferral = referralId != null && !referralId.trim().isEmpty() && 
+                                         referralService.isValidReferralId(referralId);
+                
+                if (hasValidReferral) {
+                    // For referral applications, let BPMN workflow run with referral bypass
+                    logger.info("Referral application {} - running BPMN workflow with referral bypass", applicationId);
+                    updateBPMNProcess(applicationId, applicationData, stepData, currentStepId);
                 } else {
-                    logger.warn("No process instance ID found for application: {}", applicationId);
+                    // Normal BPMN workflow for non-referral applications
+                    updateBPMNProcess(applicationId, applicationData, stepData, currentStepId);
                 }
-            } catch (Exception e) {
-                logger.warn("Failed to update BPMN process for application {}: {}", applicationId, e.getMessage());
-                // Continue without BPMN update - the application will still work
+            } else {
+                // Normal BPMN workflow for non-final steps
+                updateBPMNProcess(applicationId, applicationData, stepData, currentStepId);
             }
             
             ApplicationResponse response = new ApplicationResponse();
@@ -212,6 +228,55 @@ public class JobApplicationService {
         } catch (Exception e) {
             logger.error("Failed to submit step for application: {}", applicationId, e);
             throw new RuntimeException("Failed to submit step: " + e.getMessage());
+        }
+    }
+    
+    private void updateBPMNProcess(String applicationId, Map<String, Object> applicationData, 
+                                  Map<String, Object> stepData, String currentStepId) {
+        try {
+            String processInstanceId = (String) applicationData.get("processInstanceId");
+            if (processInstanceId != null) {
+                // Find and complete current user task
+                Task currentTask = taskService.createTaskQuery()
+                    .processInstanceId(processInstanceId)
+                    .active()
+                    .singleResult();
+                
+                if (currentTask != null) {
+                    // Set task variables and complete
+                    Map<String, Object> taskVariables = new HashMap<>(stepData);
+                    taskVariables.put("stepCompleted", currentStepId);
+                    taskVariables.put("validationResult", true);
+                    
+                    // Add referral information to process variables
+                    if (applicationData.containsKey("hasValidReferral")) {
+                        Boolean hasValidReferral = (Boolean) applicationData.get("hasValidReferral");
+                        taskVariables.put("hasValidReferral", hasValidReferral != null ? hasValidReferral : false);
+                        
+                        Boolean bypassedApprovals = (Boolean) applicationData.get("bypassedApprovals");
+                        taskVariables.put("bypassedApprovals", bypassedApprovals != null ? bypassedApprovals : false);
+                        
+                        if (applicationData.containsKey("referralId")) {
+                            taskVariables.put("referralId", applicationData.get("referralId"));
+                        }
+                    } else {
+                        // Set default values for non-referral applications
+                        taskVariables.put("hasValidReferral", false);
+                        taskVariables.put("bypassedApprovals", false);
+                    }
+                    
+                    taskService.complete(currentTask.getId(), taskVariables);
+                    logger.info("Completed BPMN task: {} for application: {}", currentTask.getId(), applicationId);
+                    
+                } else {
+                    logger.warn("No active BPMN task found for process instance: {}", processInstanceId);
+                }
+            } else {
+                logger.warn("No process instance ID found for application: {}", applicationId);
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to update BPMN process for application {}: {}", applicationId, e.getMessage());
+            // Continue without BPMN update - the application will still work
         }
     }
     
@@ -272,75 +337,7 @@ public class JobApplicationService {
             for (ProcessInstance processInstance : activeProcesses) {
                 String applicationId = processInstance.getBusinessKey();
                 if (applicationId != null && applicationDataStore.containsKey(applicationId)) {
-                    try {
-                        // Get process variables
-                        Map<String, Object> processVariables = runtimeService.getVariables(processInstance.getId());
-                        Map<String, Object> appData = applicationDataStore.get(applicationId);
-                        
-                        // Sync HR decision
-                        if (processVariables.containsKey("hrDecision")) {
-                            appData.put("hrDecision", processVariables.get("hrDecision"));
-                            appData.put("hrComments", processVariables.get("hrComments"));
-                            appData.put("interviewRequired", processVariables.get("interviewRequired"));
-                            logger.debug("Synced HR decision for application {}", applicationId);
-                        }
-                        
-                        // Sync Team Lead decision
-                        if (processVariables.containsKey("tlDecision")) {
-                            appData.put("tlDecision", processVariables.get("tlDecision"));
-                            appData.put("tlComments", processVariables.get("tlComments"));
-                            logger.debug("Synced TL decision for application {}", applicationId);
-                        }
-                        
-                        // Sync Project Manager decision
-                        if (processVariables.containsKey("pmDecision")) {
-                            appData.put("pmDecision", processVariables.get("pmDecision"));
-                            appData.put("pmComments", processVariables.get("pmComments"));
-                            logger.debug("Synced PM decision for application {}", applicationId);
-                        }
-                        
-                        // Sync Head HR decision
-                        if (processVariables.containsKey("headHRDecision")) {
-                            appData.put("headHRDecision", processVariables.get("headHRDecision"));
-                            appData.put("headHRComments", processVariables.get("headHRComments"));
-                            appData.put("offerCTC", processVariables.get("offerCTC"));
-                            logger.debug("Synced Head HR decision for application {}", applicationId);
-                        }
-                        
-                        // Update status based on current task
-                        Task currentTask = taskService.createTaskQuery()
-                            .processInstanceId(processInstance.getId())
-                            .active()
-                            .singleResult();
-                        
-                        if (currentTask != null) {
-                            String taskName = currentTask.getName();
-                            String newStatus = appData.get("applicationStatus").toString();
-                            
-                            // Update status based on current task
-                            if (taskName.contains("HR Application Review")) {
-                                newStatus = "PENDING_HR_REVIEW";
-                            } else if (taskName.contains("Team Lead Review")) {
-                                newStatus = "PENDING_TL_REVIEW";
-                            } else if (taskName.contains("Project Manager Review")) {
-                                newStatus = "PENDING_PM_REVIEW";
-                            } else if (taskName.contains("Head HR Final Review")) {
-                                newStatus = "PENDING_HEAD_HR_REVIEW";
-                            }
-                            
-                            appData.put("applicationStatus", newStatus);
-                            applicationStatusStore.put(applicationId, newStatus);
-                            logger.debug("Updated application {} status to: {} (task: {})", 
-                                       applicationId, newStatus, taskName);
-                        }
-                        
-                        appData.put("lastUpdatedTimestamp", LocalDateTime.now().toString());
-                        applicationDataStore.put(applicationId, appData);
-                        
-                    } catch (Exception e) {
-                        logger.warn("Failed to sync process variables for application {}: {}", 
-                                  applicationId, e.getMessage());
-                    }
+                    syncProcessVariables(processInstance.getId(), applicationId, false);
                 }
             }
             
@@ -353,71 +350,136 @@ public class JobApplicationService {
             for (HistoricProcessInstance processInstance : endedProcesses) {
                 String applicationId = processInstance.getBusinessKey();
                 if (applicationId != null && applicationDataStore.containsKey(applicationId)) {
-                    try {
-                        Map<String, Object> processVariables = historyService.createHistoricVariableInstanceQuery()
-                            .processInstanceId(processInstance.getId())
-                            .list()
-                            .stream()
-                            .collect(java.util.stream.Collectors.toMap(
-                                v -> v.getName(),
-                                v -> v.getValue()
-                            ));
-                        
-                        Map<String, Object> appData = applicationDataStore.get(applicationId);
-                        
-                        // Sync all decisions
-                        if (processVariables.containsKey("hrDecision")) {
-                            appData.put("hrDecision", processVariables.get("hrDecision"));
-                            appData.put("hrComments", processVariables.get("hrComments"));
-                        }
-                        if (processVariables.containsKey("tlDecision")) {
-                            appData.put("tlDecision", processVariables.get("tlDecision"));
-                            appData.put("tlComments", processVariables.get("tlComments"));
-                        }
-                        if (processVariables.containsKey("pmDecision")) {
-                            appData.put("pmDecision", processVariables.get("pmDecision"));
-                            appData.put("pmComments", processVariables.get("pmComments"));
-                        }
-                        if (processVariables.containsKey("headHRDecision")) {
-                            appData.put("headHRDecision", processVariables.get("headHRDecision"));
-                            appData.put("headHRComments", processVariables.get("headHRComments"));
-                            appData.put("offerCTC", processVariables.get("offerCTC"));
-                        }
-                        
-                        // Determine final status
-                        String finalStatus = "COMPLETED";
-                        if (processVariables.containsKey("headHRDecision")) {
-                            String headHRDecision = (String) processVariables.get("headHRDecision");
-                            finalStatus = "accept".equals(headHRDecision) ? "ACCEPTED" : "REJECTED_BY_HEAD_HR";
-                        } else if (processVariables.containsKey("tlDecision") || processVariables.containsKey("pmDecision")) {
-                            String tlDecision = (String) processVariables.get("tlDecision");
-                            String pmDecision = (String) processVariables.get("pmDecision");
-                            if ("reject".equals(tlDecision) || "reject".equals(pmDecision)) {
-                                finalStatus = "REJECTED_BY_TL_PM";
-                            }
-                        } else if (processVariables.containsKey("hrDecision")) {
-                            String hrDecision = (String) processVariables.get("hrDecision");
-                            if ("reject".equals(hrDecision)) {
-                                finalStatus = "REJECTED_BY_HR";
-                            }
-                        }
-                        
-                        appData.put("applicationStatus", finalStatus);
-                        applicationStatusStore.put(applicationId, finalStatus);
-                        appData.put("lastUpdatedTimestamp", LocalDateTime.now().toString());
-                        
-                        logger.info("Updated completed application {} to final status: {}", applicationId, finalStatus);
-                        
-                    } catch (Exception e) {
-                        logger.warn("Failed to sync ended process for application {}: {}", 
-                                  applicationId, e.getMessage());
-                    }
+                    syncProcessVariables(processInstance.getId(), applicationId, true);
                 }
             }
             
         } catch (Exception e) {
             logger.warn("Failed to sync application status with Camunda: {}", e.getMessage());
         }
+    }
+    
+    private void syncProcessVariables(String processInstanceId, String applicationId, boolean isEnded) {
+        try {
+            Map<String, Object> processVariables;
+            
+            if (isEnded) {
+                processVariables = historyService.createHistoricVariableInstanceQuery()
+                    .processInstanceId(processInstanceId)
+                    .list()
+                    .stream()
+                    .collect(java.util.stream.Collectors.toMap(
+                        v -> v.getName(),
+                        v -> v.getValue()
+                    ));
+            } else {
+                processVariables = runtimeService.getVariables(processInstanceId);
+            }
+            
+            Map<String, Object> appData = applicationDataStore.get(applicationId);
+            
+            // Sync all decisions
+            syncDecisionData(appData, processVariables, "hr");
+            syncDecisionData(appData, processVariables, "tl");
+            syncDecisionData(appData, processVariables, "pm");
+            syncDecisionData(appData, processVariables, "headHR");
+            syncDecisionData(appData, processVariables, "companyManager");
+            
+            if (isEnded) {
+                // Determine final status for ended processes
+                String finalStatus = determineFinalStatus(processVariables);
+                appData.put("applicationStatus", finalStatus);
+                applicationStatusStore.put(applicationId, finalStatus);
+                logger.info("Updated completed application {} to final status: {}", applicationId, finalStatus);
+            } else {
+                // Update status based on current task for active processes
+                updateStatusFromCurrentTask(processInstanceId, applicationId, appData);
+            }
+            
+            appData.put("lastUpdatedTimestamp", LocalDateTime.now().toString());
+            
+        } catch (Exception e) {
+            logger.warn("Failed to sync process variables for application {}: {}", applicationId, e.getMessage());
+        }
+    }
+    
+    private void syncDecisionData(Map<String, Object> appData, Map<String, Object> processVariables, String role) {
+        String decisionKey = role + "Decision";
+        String commentsKey = role + "Comments";
+        
+        if (processVariables.containsKey(decisionKey)) {
+            appData.put(decisionKey, processVariables.get(decisionKey));
+            appData.put(commentsKey, processVariables.get(commentsKey));
+            
+            // Handle special fields
+            if ("hr".equals(role) && processVariables.containsKey("interviewRequired")) {
+                Object interviewRequired = processVariables.get("interviewRequired");
+                appData.put("interviewRequired", interviewRequired != null ? interviewRequired : false);
+            } else if ("headHR".equals(role) && processVariables.containsKey("offerCTC")) {
+                appData.put("offerCTC", processVariables.get("offerCTC"));
+            } else if ("companyManager".equals(role) && processVariables.containsKey("finalOfferCTC")) {
+                appData.put("finalOfferCTC", processVariables.get("finalOfferCTC"));
+            }
+            
+            logger.debug("Synced {} decision for application", role);
+        }
+    }
+    
+    private String determineFinalStatus(Map<String, Object> processVariables) {
+        if (processVariables.containsKey("companyManagerDecision")) {
+            String companyManagerDecision = (String) processVariables.get("companyManagerDecision");
+            return "accept".equals(companyManagerDecision) ? "ACCEPTED" : "REJECTED_BY_COMPANY_MANAGER";
+        } else if (processVariables.containsKey("headHRDecision")) {
+            String headHRDecision = (String) processVariables.get("headHRDecision");
+            return "accept".equals(headHRDecision) ? "ACCEPTED" : "REJECTED_BY_HEAD_HR";
+        } else if (processVariables.containsKey("tlDecision") || processVariables.containsKey("pmDecision")) {
+            String tlDecision = (String) processVariables.get("tlDecision");
+            String pmDecision = (String) processVariables.get("pmDecision");
+            if ("reject".equals(tlDecision) || "reject".equals(pmDecision)) {
+                return "REJECTED_BY_TL_PM";
+            }
+        } else if (processVariables.containsKey("hrDecision")) {
+            String hrDecision = (String) processVariables.get("hrDecision");
+            if ("reject".equals(hrDecision)) {
+                return "REJECTED_BY_HR";
+            }
+        }
+        return "COMPLETED";
+    }
+    
+    private void updateStatusFromCurrentTask(String processInstanceId, String applicationId, Map<String, Object> appData) {
+        try {
+            Task currentTask = taskService.createTaskQuery()
+                .processInstanceId(processInstanceId)
+                .active()
+                .singleResult();
+            
+            if (currentTask != null) {
+                String taskName = currentTask.getName();
+                String newStatus = determineStatusFromTaskName(taskName);
+                
+                appData.put("applicationStatus", newStatus);
+                applicationStatusStore.put(applicationId, newStatus);
+                logger.debug("Updated application {} status to: {} (task: {})", applicationId, newStatus, taskName);
+            }
+        } catch (Exception e) {
+            logger.warn("Failed to update status from current task for application {}: {}", applicationId, e.getMessage());
+        }
+    }
+    
+    private String determineStatusFromTaskName(String taskName) {
+        if (taskName.contains("HR Application Review")) {
+            return "PENDING_HR_REVIEW";
+        } else if (taskName.contains("Team Lead Review")) {
+            return "PENDING_TL_REVIEW";
+        } else if (taskName.contains("Project Manager Review")) {
+            return "PENDING_PM_REVIEW";
+        } else if (taskName.contains("Head HR Final Review")) {
+            return "PENDING_HEAD_HR_REVIEW";
+        } else if (taskName.contains("Company Manager Final Review")) {
+            return "PENDING_COMPANY_MANAGER_REVIEW";
+        }
+        return "IN_PROGRESS";
     }
     
     // Method to manually update application status (can be called by Camunda delegates)
@@ -441,8 +503,541 @@ public class JobApplicationService {
         }
     }
     
+    /**
+     * Approve an application by a specific role
+     */
+    public Map<String, Object> approveApplication(String applicationId, String role, String comments, String offerCTC) {
+        try {
+            Map<String, Object> result = new HashMap<>();
+            
+            // Get application data
+            Map<String, Object> appData = applicationDataStore.get(applicationId);
+            if (appData == null) {
+                throw new RuntimeException("Application not found: " + applicationId);
+            }
+            
+            // Find the Camunda task for this application and role (optional for Company Manager)
+            String processInstanceId = (String) appData.get("processInstanceId");
+            Task activeTask = null;
+            
+            if (processInstanceId != null) {
+                activeTask = findTaskForRole(processInstanceId, role);
+            }
+            
+            // For Company Manager, allow approval even without Camunda task (referral applications)
+            if (activeTask == null && !"companymanager".equals(role.toLowerCase())) {
+                if (processInstanceId == null) {
+                    throw new RuntimeException("No process instance found for application: " + applicationId);
+                } else {
+                    throw new RuntimeException("No active task found for role: " + role + " in application: " + applicationId);
+                }
+            }
+            
+            // Prepare task variables for approval
+            Map<String, Object> taskVariables = new HashMap<>();
+            
+            switch (role.toLowerCase()) {
+                case "hr":
+                    taskVariables.put("hrDecision", "accept");
+                    taskVariables.put("hrComments", comments != null ? comments : "");
+                    taskVariables.put("interviewRequired", true); // Default for approved applications
+                    appData.put("hrDecision", "accept");
+                    appData.put("hrComments", comments);
+                    appData.put("applicationStatus", "HR_APPROVED");
+                    applicationStatusStore.put(applicationId, "HR_APPROVED");
+                    break;
+                    
+                case "teamlead":
+                case "tl":
+                    taskVariables.put("tlDecision", "accept");
+                    taskVariables.put("tlComments", comments != null ? comments : "");
+                    appData.put("tlDecision", "accept");
+                    appData.put("tlComments", comments);
+                    // Status will be updated based on PM decision
+                    break;
+                    
+                case "projectmanager":
+                case "pm":
+                    taskVariables.put("pmDecision", "accept");
+                    taskVariables.put("pmComments", comments != null ? comments : "");
+                    appData.put("pmDecision", "accept");
+                    appData.put("pmComments", comments);
+                    // Status will be updated based on TL decision
+                    break;
+                    
+                case "headhr":
+                    taskVariables.put("headHRDecision", "accept");
+                    taskVariables.put("headHRComments", comments != null ? comments : "");
+                    if (offerCTC != null && !offerCTC.trim().isEmpty()) {
+                        taskVariables.put("offerCTC", offerCTC);
+                        appData.put("offerCTC", offerCTC);
+                    }
+                    appData.put("headHRDecision", "accept");
+                    appData.put("headHRComments", comments);
+                    
+                    // Normal flow - always goes to Company Manager after Head HR
+                    appData.put("applicationStatus", "PENDING_COMPANY_MANAGER_REVIEW");
+                    applicationStatusStore.put(applicationId, "PENDING_COMPANY_MANAGER_REVIEW");
+                    break;
+                    
+                case "companymanager":
+                    taskVariables.put("companyManagerDecision", "accept");
+                    taskVariables.put("companyManagerComments", comments != null ? comments : "");
+                    if (offerCTC != null && !offerCTC.trim().isEmpty()) {
+                        taskVariables.put("finalOfferCTC", offerCTC);
+                        appData.put("finalOfferCTC", offerCTC);
+                    }
+                    appData.put("companyManagerDecision", "accept");
+                    appData.put("companyManagerComments", comments);
+                    appData.put("applicationStatus", "ACCEPTED");
+                    applicationStatusStore.put(applicationId, "ACCEPTED");
+                    break;
+                    
+                default:
+                    throw new RuntimeException("Invalid role: " + role);
+            }
+            
+            // Complete the Camunda task (optional for Company Manager with referral applications)
+            if (activeTask != null) {
+                taskService.complete(activeTask.getId(), taskVariables);
+            } else if ("companymanager".equals(role.toLowerCase())) {
+                // For Company Manager, allow approval without Camunda task (referral applications)
+                logger.info("Company Manager approval for application {} without Camunda task (likely referral application)", applicationId);
+            } else {
+                throw new RuntimeException("No active task found for role: " + role + " in application: " + applicationId);
+            }
+            
+            // Update application data
+            appData.put("lastUpdatedTimestamp", LocalDateTime.now().toString());
+            applicationDataStore.put(applicationId, appData);
+            
+            // Check if both TL and PM have approved (for parallel gateway)
+            if (("teamlead".equals(role.toLowerCase()) || "tl".equals(role.toLowerCase()) || 
+                 "projectmanager".equals(role.toLowerCase()) || "pm".equals(role.toLowerCase()))) {
+                
+                String tlDecision = (String) appData.get("tlDecision");
+                String pmDecision = (String) appData.get("pmDecision");
+                
+                if ("accept".equals(tlDecision) && "accept".equals(pmDecision)) {
+                    appData.put("applicationStatus", "PENDING_HEAD_HR_REVIEW");
+                    applicationStatusStore.put(applicationId, "PENDING_HEAD_HR_REVIEW");
+                }
+            }
+            
+            result.put("success", true);
+            result.put("message", "Application approved successfully by " + role);
+            result.put("applicationId", applicationId);
+            result.put("role", role);
+            result.put("decision", "approve");
+            result.put("comments", comments);
+            result.put("timestamp", LocalDateTime.now().toString());
+            result.put("newStatus", appData.get("applicationStatus"));
+            
+            logger.info("Application {} approved by {}: {}", applicationId, role, comments);
+            
+            return result;
+            
+        } catch (Exception e) {
+            logger.error("Failed to approve application {} by {}: {}", applicationId, role, e.getMessage());
+            throw new RuntimeException("Failed to approve application: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Reject an application by a specific role
+     */
+    public Map<String, Object> rejectApplication(String applicationId, String role, String comments) {
+        try {
+            Map<String, Object> result = new HashMap<>();
+            
+            // Get application data
+            Map<String, Object> appData = applicationDataStore.get(applicationId);
+            if (appData == null) {
+                throw new RuntimeException("Application not found: " + applicationId);
+            }
+            
+            // Find the Camunda task for this application and role (optional for Company Manager)
+            String processInstanceId = (String) appData.get("processInstanceId");
+            Task activeTask = null;
+            
+            if (processInstanceId != null) {
+                activeTask = findTaskForRole(processInstanceId, role);
+            }
+            
+            // For Company Manager, allow rejection even without Camunda task (referral applications)
+            if (activeTask == null && !"companymanager".equals(role.toLowerCase())) {
+                if (processInstanceId == null) {
+                    throw new RuntimeException("No process instance found for application: " + applicationId);
+                } else {
+                    throw new RuntimeException("No active task found for role: " + role + " in application: " + applicationId);
+                }
+            }
+            
+            // Prepare task variables for rejection
+            Map<String, Object> taskVariables = new HashMap<>();
+            String rejectionStatus;
+            
+            switch (role.toLowerCase()) {
+                case "hr":
+                    taskVariables.put("hrDecision", "reject");
+                    taskVariables.put("hrComments", comments != null ? comments : "");
+                    appData.put("hrDecision", "reject");
+                    appData.put("hrComments", comments);
+                    rejectionStatus = "REJECTED_BY_HR";
+                    break;
+                    
+                case "teamlead":
+                case "tl":
+                    taskVariables.put("tlDecision", "reject");
+                    taskVariables.put("tlComments", comments != null ? comments : "");
+                    appData.put("tlDecision", "reject");
+                    appData.put("tlComments", comments);
+                    rejectionStatus = "REJECTED_BY_TL_PM";
+                    break;
+                    
+                case "projectmanager":
+                case "pm":
+                    taskVariables.put("pmDecision", "reject");
+                    taskVariables.put("pmComments", comments != null ? comments : "");
+                    appData.put("pmDecision", "reject");
+                    appData.put("pmComments", comments);
+                    rejectionStatus = "REJECTED_BY_TL_PM";
+                    break;
+                    
+                case "headhr":
+                    taskVariables.put("headHRDecision", "reject");
+                    taskVariables.put("headHRComments", comments != null ? comments : "");
+                    appData.put("headHRDecision", "reject");
+                    appData.put("headHRComments", comments);
+                    rejectionStatus = "REJECTED_BY_HEAD_HR";
+                    break;
+                    
+                case "companymanager":
+                    taskVariables.put("companyManagerDecision", "reject");
+                    taskVariables.put("companyManagerComments", comments != null ? comments : "");
+                    appData.put("companyManagerDecision", "reject");
+                    appData.put("companyManagerComments", comments);
+                    rejectionStatus = "REJECTED_BY_COMPANY_MANAGER";
+                    break;
+                    
+                default:
+                    throw new RuntimeException("Invalid role: " + role);
+            }
+            
+            // Complete the Camunda task (optional for Company Manager with referral applications)
+            if (activeTask != null) {
+                taskService.complete(activeTask.getId(), taskVariables);
+            } else if ("companymanager".equals(role.toLowerCase())) {
+                // For Company Manager, allow rejection without Camunda task (referral applications)
+                logger.info("Company Manager rejection for application {} without Camunda task (likely referral application)", applicationId);
+            } else {
+                throw new RuntimeException("No active task found for role: " + role + " in application: " + applicationId);
+            }
+            
+            // Update application status to rejected
+            appData.put("applicationStatus", rejectionStatus);
+            appData.put("lastUpdatedTimestamp", LocalDateTime.now().toString());
+            applicationStatusStore.put(applicationId, rejectionStatus);
+            applicationDataStore.put(applicationId, appData);
+            
+            result.put("success", true);
+            result.put("message", "Application rejected by " + role);
+            result.put("applicationId", applicationId);
+            result.put("role", role);
+            result.put("decision", "reject");
+            result.put("comments", comments);
+            result.put("timestamp", LocalDateTime.now().toString());
+            result.put("newStatus", rejectionStatus);
+            
+            logger.info("Application {} rejected by {}: {}", applicationId, role, comments);
+            
+            return result;
+            
+        } catch (Exception e) {
+            logger.error("Failed to reject application {} by {}: {}", applicationId, role, e.getMessage());
+            throw new RuntimeException("Failed to reject application: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Get application status with approval details
+     */
+    public Map<String, Object> getApplicationStatus(String applicationId) {
+        try {
+            // Sync with Camunda first
+            syncApplicationStatusWithCamunda();
+            
+            Map<String, Object> appData = applicationDataStore.get(applicationId);
+            if (appData == null) {
+                throw new RuntimeException("Application not found: " + applicationId);
+            }
+            
+            Map<String, Object> status = new HashMap<>();
+            status.put("applicationId", applicationId);
+            status.put("currentStatus", appData.get("applicationStatus"));
+            status.put("lastUpdated", appData.get("lastUpdatedTimestamp"));
+            
+            // Add approval details
+            Map<String, Object> approvals = new HashMap<>();
+            
+            // HR approval
+            if (appData.containsKey("hrDecision")) {
+                Map<String, Object> hrApproval = new HashMap<>();
+                hrApproval.put("decision", appData.get("hrDecision"));
+                hrApproval.put("comments", appData.get("hrComments"));
+                approvals.put("hr", hrApproval);
+            }
+            
+            // Team Lead approval
+            if (appData.containsKey("tlDecision")) {
+                Map<String, Object> tlApproval = new HashMap<>();
+                tlApproval.put("decision", appData.get("tlDecision"));
+                tlApproval.put("comments", appData.get("tlComments"));
+                approvals.put("teamLead", tlApproval);
+            }
+            
+            // Project Manager approval
+            if (appData.containsKey("pmDecision")) {
+                Map<String, Object> pmApproval = new HashMap<>();
+                pmApproval.put("decision", appData.get("pmDecision"));
+                pmApproval.put("comments", appData.get("pmComments"));
+                approvals.put("projectManager", pmApproval);
+            }
+            
+            // Head HR approval
+            if (appData.containsKey("headHRDecision")) {
+                Map<String, Object> headHRApproval = new HashMap<>();
+                headHRApproval.put("decision", appData.get("headHRDecision"));
+                headHRApproval.put("comments", appData.get("headHRComments"));
+                if (appData.containsKey("offerCTC")) {
+                    headHRApproval.put("offerCTC", appData.get("offerCTC"));
+                }
+                approvals.put("headHR", headHRApproval);
+            }
+            
+            // Company Manager approval
+            if (appData.containsKey("companyManagerDecision")) {
+                Map<String, Object> companyManagerApproval = new HashMap<>();
+                companyManagerApproval.put("decision", appData.get("companyManagerDecision"));
+                companyManagerApproval.put("comments", appData.get("companyManagerComments"));
+                if (appData.containsKey("finalOfferCTC")) {
+                    companyManagerApproval.put("finalOfferCTC", appData.get("finalOfferCTC"));
+                }
+                approvals.put("companyManager", companyManagerApproval);
+            }
+            
+            status.put("approvals", approvals);
+            status.put("applicationData", appData);
+            
+            return status;
+            
+        } catch (Exception e) {
+            logger.error("Failed to get application status for {}: {}", applicationId, e.getMessage());
+            throw new RuntimeException("Failed to get application status: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Find the active Camunda task for a specific role
+     */
+    private Task findTaskForRole(String processInstanceId, String role) {
+        try {
+            List<Task> activeTasks = taskService.createTaskQuery()
+                .processInstanceId(processInstanceId)
+                .active()
+                .list();
+            
+            for (Task task : activeTasks) {
+                String taskName = task.getName();
+                
+                switch (role.toLowerCase()) {
+                    case "hr":
+                        if (taskName.contains("HR Application Review") || taskName.contains("HR Review")) {
+                            return task;
+                        }
+                        break;
+                    case "teamlead":
+                    case "tl":
+                        if (taskName.contains("Team Lead Review") || taskName.contains("TL Review")) {
+                            return task;
+                        }
+                        break;
+                    case "projectmanager":
+                    case "pm":
+                        if (taskName.contains("Project Manager Review") || taskName.contains("PM Review")) {
+                            return task;
+                        }
+                        break;
+                    case "headhr":
+                        if (taskName.contains("Head HR Final Review") || taskName.contains("Head HR Review")) {
+                            return task;
+                        }
+                        break;
+                    case "companymanager":
+                        if (taskName.contains("Company Manager Final Review") || taskName.contains("Company Manager Review")) {
+                            return task;
+                        }
+                        break;
+                }
+            }
+            
+            return null;
+            
+        } catch (Exception e) {
+            logger.error("Failed to find task for role {} in process {}: {}", role, processInstanceId, e.getMessage());
+            return null;
+        }
+    }
+
     private String generateApplicationId() {
         return "APP-" + System.currentTimeMillis() + "-" + 
                UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+    }
+    
+    /**
+     * Initiate onboarding process for an application
+     */
+    public Map<String, Object> initiateOnboarding(String applicationId, String joiningDate, 
+                                                 String reportingManager, String department, String comments) {
+        try {
+            Map<String, Object> result = new HashMap<>();
+            
+            // Get application data
+            Map<String, Object> appData = applicationDataStore.get(applicationId);
+            if (appData == null) {
+                throw new RuntimeException("Application not found: " + applicationId);
+            }
+            
+            // Find the HR Review task for this application
+            String processInstanceId = (String) appData.get("processInstanceId");
+            if (processInstanceId == null) {
+                throw new RuntimeException("No process instance found for application: " + applicationId);
+            }
+            
+            Task activeTask = findTaskForRole(processInstanceId, "hr");
+            if (activeTask == null) {
+                throw new RuntimeException("No active HR task found for application: " + applicationId);
+            }
+            
+            // Prepare task variables for onboarding
+            Map<String, Object> taskVariables = new HashMap<>();
+            taskVariables.put("hrDecision", "onboarding");
+            taskVariables.put("hrComments", comments != null ? comments : "");
+            taskVariables.put("joiningDate", joiningDate);
+            taskVariables.put("reportingManager", reportingManager);
+            taskVariables.put("department", department);
+            
+            // Update application data
+            appData.put("hrDecision", "onboarding");
+            appData.put("hrComments", comments);
+            appData.put("joiningDate", joiningDate);
+            appData.put("reportingManager", reportingManager);
+            appData.put("department", department);
+            appData.put("applicationStatus", "ONBOARDING_INITIATED");
+            appData.put("lastUpdatedTimestamp", LocalDateTime.now().toString());
+            
+            // Complete the Camunda task
+            taskService.complete(activeTask.getId(), taskVariables);
+            
+            // Update stores
+            applicationDataStore.put(applicationId, appData);
+            applicationStatusStore.put(applicationId, "ONBOARDING_INITIATED");
+            
+            result.put("success", true);
+            result.put("message", "Onboarding process initiated successfully");
+            result.put("applicationId", applicationId);
+            result.put("joiningDate", joiningDate);
+            result.put("reportingManager", reportingManager);
+            result.put("department", department);
+            result.put("timestamp", LocalDateTime.now().toString());
+            result.put("newStatus", "ONBOARDING_INITIATED");
+            
+            logger.info("Onboarding initiated for application {}: joining={}, manager={}, dept={}", 
+                       applicationId, joiningDate, reportingManager, department);
+            
+            return result;
+            
+        } catch (Exception e) {
+            logger.error("Failed to initiate onboarding for application {}: {}", applicationId, e.getMessage());
+            throw new RuntimeException("Failed to initiate onboarding: " + e.getMessage());
+        }
+    }
+    
+    /**
+     * Complete the candidate onboarding process
+     */
+    public Map<String, Object> completeOnboarding(String applicationId, Map<String, Object> onboardingData) {
+        try {
+            Map<String, Object> result = new HashMap<>();
+            
+            // Get application data
+            Map<String, Object> appData = applicationDataStore.get(applicationId);
+            if (appData == null) {
+                throw new RuntimeException("Application not found: " + applicationId);
+            }
+            
+            // Find the Candidate Onboarding task for this application
+            String processInstanceId = (String) appData.get("processInstanceId");
+            if (processInstanceId == null) {
+                throw new RuntimeException("No process instance found for application: " + applicationId);
+            }
+            
+            // Find the candidate onboarding task
+            List<Task> activeTasks = taskService.createTaskQuery()
+                .processInstanceId(processInstanceId)
+                .active()
+                .list();
+            
+            Task onboardingTask = null;
+            for (Task task : activeTasks) {
+                if (task.getName().contains("Candidate Onboarding")) {
+                    onboardingTask = task;
+                    break;
+                }
+            }
+            
+            if (onboardingTask == null) {
+                throw new RuntimeException("No active candidate onboarding task found for application: " + applicationId);
+            }
+            
+            // Prepare task variables with onboarding data
+            Map<String, Object> taskVariables = new HashMap<>();
+            taskVariables.put("aadharNumber", onboardingData.get("aadharNumber"));
+            taskVariables.put("panNumber", onboardingData.get("panNumber"));
+            taskVariables.put("bankAccountNumber", onboardingData.get("bankAccountNumber"));
+            taskVariables.put("bankIFSC", onboardingData.get("bankIFSC"));
+            taskVariables.put("bankName", onboardingData.get("bankName"));
+            taskVariables.put("emergencyContact", onboardingData.get("emergencyContact"));
+            taskVariables.put("emergencyContactName", onboardingData.get("emergencyContactName"));
+            taskVariables.put("currentAddress", onboardingData.get("currentAddress"));
+            taskVariables.put("permanentAddress", onboardingData.get("permanentAddress"));
+            taskVariables.put("bloodGroup", onboardingData.get("bloodGroup"));
+            
+            // Update application data with onboarding information
+            appData.putAll(onboardingData);
+            appData.put("applicationStatus", "ONBOARDING_COMPLETED");
+            appData.put("lastUpdatedTimestamp", LocalDateTime.now().toString());
+            
+            // Complete the Camunda task
+            taskService.complete(onboardingTask.getId(), taskVariables);
+            
+            // Update stores
+            applicationDataStore.put(applicationId, appData);
+            applicationStatusStore.put(applicationId, "ONBOARDING_COMPLETED");
+            
+            result.put("success", true);
+            result.put("message", "Onboarding completed successfully");
+            result.put("applicationId", applicationId);
+            result.put("timestamp", LocalDateTime.now().toString());
+            result.put("newStatus", "ONBOARDING_COMPLETED");
+            
+            logger.info("Onboarding completed for application {}", applicationId);
+            
+            return result;
+            
+        } catch (Exception e) {
+            logger.error("Failed to complete onboarding for application {}: {}", applicationId, e.getMessage());
+            throw new RuntimeException("Failed to complete onboarding: " + e.getMessage());
+        }
     }
 }

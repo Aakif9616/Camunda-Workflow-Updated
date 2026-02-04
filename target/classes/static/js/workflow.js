@@ -672,4 +672,20 @@ class WorkflowManager {
             }, 5000);
         }
     }
+
+    debugCurrentState() {
+        console.log('=== WORKFLOW DEBUG ===');
+        console.log('Current Step Index:', this.currentStepIndex);
+        console.log('Application ID:', this.applicationId);
+        console.log('Step Data:', this.stepData);
+        console.log('Workflow Definition:', this.workflowDefinition);
+        
+        if (this.workflowDefinition && this.workflowDefinition.steps) {
+            const currentStep = this.workflowDefinition.steps[this.currentStepIndex];
+            console.log('Current Step:', currentStep);
+            console.log('Current Step Fields:', currentStep?.fields);
+        }
+        
+        alert('Debug info logged to console. Check browser developer tools.');
+    }
 }

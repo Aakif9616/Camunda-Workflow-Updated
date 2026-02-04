@@ -32,6 +32,8 @@ public class StoreApplicationDelegate implements JavaDelegate {
         String hrDecision = (String) execution.getVariable("hrDecision");
         String hrComments = (String) execution.getVariable("hrComments");
         Boolean interviewRequired = (Boolean) execution.getVariable("interviewRequired");
+        // Handle null interviewRequired safely
+        boolean interviewRequiredValue = interviewRequired != null ? interviewRequired : false;
         
         // In a real implementation, you would:
         // 1. Save to database
@@ -43,18 +45,18 @@ public class StoreApplicationDelegate implements JavaDelegate {
         
         // For demo purposes, we'll log the data and set acceptance status
         logger.info("Application data for {}: {}", applicationId, variables);
-        logger.info("HR Decision: {}, Comments: {}, Interview Required: {}", hrDecision, hrComments, interviewRequired);
+        logger.info("HR Decision: {}, Comments: {}, Interview Required: {}", hrDecision, hrComments, interviewRequiredValue);
         
         execution.setVariable("applicationStatus", "ACCEPTED");
         execution.setVariable("acceptanceTimestamp", LocalDateTime.now());
         execution.setVariable("referenceNumber", "REF-" + System.currentTimeMillis());
-        execution.setVariable("nextStep", interviewRequired ? "INTERVIEW_SCHEDULING" : "ONBOARDING_PROCESS");
+        execution.setVariable("nextStep", interviewRequiredValue ? "INTERVIEW_SCHEDULING" : "ONBOARDING_PROCESS");
         
         // Update our in-memory application store
         Map<String, Object> additionalData = new HashMap<>();
         additionalData.put("hrDecision", hrDecision);
         additionalData.put("hrComments", hrComments);
-        additionalData.put("interviewRequired", interviewRequired);
+        additionalData.put("interviewRequired", interviewRequiredValue);
         additionalData.put("acceptanceTimestamp", LocalDateTime.now().toString());
         additionalData.put("referenceNumber", "REF-" + System.currentTimeMillis());
         

@@ -328,6 +328,120 @@ public class JobApplicationController {
     }
     
     /**
+     * POST /api/job-applications/{applicationId}/approve
+     * Approve an application by a specific role
+     */
+    @PostMapping("/{applicationId}/approve")
+    public ResponseEntity<Map<String, Object>> approveApplication(
+            @PathVariable String applicationId,
+            @RequestBody Map<String, Object> approvalData) {
+        try {
+            String role = (String) approvalData.get("role");
+            String comments = (String) approvalData.get("comments");
+            String offerCTC = (String) approvalData.get("offerCTC"); // For Head HR only
+            
+            Map<String, Object> result = jobApplicationService.approveApplication(applicationId, role, comments, offerCTC);
+            return ResponseEntity.ok(result);
+            
+        } catch (Exception e) {
+            logger.error("Failed to approve application: {}", applicationId, e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+    
+    /**
+     * POST /api/job-applications/{applicationId}/reject
+     * Reject an application by a specific role
+     */
+    @PostMapping("/{applicationId}/reject")
+    public ResponseEntity<Map<String, Object>> rejectApplication(
+            @PathVariable String applicationId,
+            @RequestBody Map<String, Object> rejectionData) {
+        try {
+            String role = (String) rejectionData.get("role");
+            String comments = (String) rejectionData.get("comments");
+            
+            Map<String, Object> result = jobApplicationService.rejectApplication(applicationId, role, comments);
+            return ResponseEntity.ok(result);
+            
+        } catch (Exception e) {
+            logger.error("Failed to reject application: {}", applicationId, e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+    
+    /**
+     * POST /api/job-applications/{applicationId}/hr-onboarding
+     * Initiate onboarding process for an application
+     */
+    @PostMapping("/{applicationId}/hr-onboarding")
+    public ResponseEntity<Map<String, Object>> initiateOnboarding(
+            @PathVariable String applicationId,
+            @RequestBody Map<String, Object> onboardingData) {
+        try {
+            String joiningDate = (String) onboardingData.get("joiningDate");
+            String reportingManager = (String) onboardingData.get("reportingManager");
+            String department = (String) onboardingData.get("department");
+            String comments = (String) onboardingData.get("hrComments");
+            
+            Map<String, Object> result = jobApplicationService.initiateOnboarding(
+                applicationId, joiningDate, reportingManager, department, comments);
+            return ResponseEntity.ok(result);
+            
+        } catch (Exception e) {
+            logger.error("Failed to initiate onboarding for application: {}", applicationId, e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+    
+    /**
+     * POST /api/job-applications/{applicationId}/complete-onboarding
+     * Complete the candidate onboarding process
+     */
+    @PostMapping("/{applicationId}/complete-onboarding")
+    public ResponseEntity<Map<String, Object>> completeOnboarding(
+            @PathVariable String applicationId,
+            @RequestBody Map<String, Object> onboardingData) {
+        try {
+            Map<String, Object> result = jobApplicationService.completeOnboarding(applicationId, onboardingData);
+            return ResponseEntity.ok(result);
+            
+        } catch (Exception e) {
+            logger.error("Failed to complete onboarding for application: {}", applicationId, e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+    
+    /**
+     * GET /api/job-applications/{applicationId}/status
+     * Get current application status and approval details
+     */
+    @GetMapping("/{applicationId}/status")
+    public ResponseEntity<Map<String, Object>> getApplicationStatus(@PathVariable String applicationId) {
+        try {
+            Map<String, Object> status = jobApplicationService.getApplicationStatus(applicationId);
+            return ResponseEntity.ok(status);
+        } catch (Exception e) {
+            logger.error("Failed to get application status: {}", applicationId, e);
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("error", e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    /**
      * GET /api/job-applications/health
      * Health check endpoint
      */

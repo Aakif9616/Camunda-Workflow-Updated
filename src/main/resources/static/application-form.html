@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Job Application Workflow</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/style.css?v=3.0">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Job Application Portal</h1>
+            <p>Dynamic Workflow System</p>
+            <div class="header-actions">
+                <a href="application-status.html" class="btn btn-secondary">
+                    <i class="fas fa-search"></i>
+                    Check Application Status
+                </a>
+                <a href="applicant-portal.html" class="btn btn-secondary">
+                    <i class="fas fa-user"></i>
+                    Applicant Portal
+                </a>
+            </div>
+        </header>
+        
+        <div id="workflow-container">
+            <!-- Progress Bar -->
+            <div class="progress-container">
+                <div class="progress-bar">
+                    <div id="progress-fill" class="progress-fill"></div>
+                </div>
+                <div id="step-indicators" class="step-indicators"></div>
+            </div>
+            
+            <!-- Current Step Display -->
+            <div id="current-step" class="step-container">
+                <div class="loading">Loading workflow...</div>
+            </div>
+            
+            <!-- Navigation Buttons -->
+            <div class="navigation">
+                <button id="prev-btn" class="btn btn-secondary" disabled>Previous</button>
+                <button id="debug-btn" class="btn" style="background: #ff9800; color: white;" onclick="window.workflowManager && window.workflowManager.debugCurrentState()">Debug</button>
+                <button id="next-btn" class="btn btn-primary">Next</button>
+                <button id="submit-btn" class="btn btn-success" style="display: none;">Submit Application</button>
+            </div>
+        </div>
+        
+        <!-- Success/Error Messages -->
+        <div id="message-container" class="message-container"></div>
+    </div>
+    
+    <!-- Use the working minimal workflow script -->
+    <script src="workflow-minimal.js?v=4.0"></script>
+    <script>
+        // Initialize workflow manager
+        window.workflowManager = new SimpleWorkflowManager();
+        window.workflowManager.initialize();
+        
+        // Debug function
+        function debugWorkflow() {
+            console.log('=== WORKFLOW DEBUG ===');
+            console.log('Current Step Index:', window.workflowManager.currentStepIndex);
+            console.log('Application ID:', window.workflowManager.applicationId);
+            console.log('Step Data:', window.workflowManager.stepData);
+            console.log('Workflow Definition:', window.workflowManager.workflowDefinition);
+            
+            if (window.workflowManager.workflowDefinition && window.workflowManager.workflowDefinition.steps) {
+                const currentStep = window.workflowManager.workflowDefinition.steps[window.workflowManager.currentStepIndex];
+                console.log('Current Step:', currentStep);
+                console.log('Current Step Fields:', currentStep?.fields);
+            }
+            
+            alert('Debug info logged to console. Check browser developer tools.');
+        }
+        
+        // Attach debug function to button
+        document.addEventListener('DOMContentLoaded', () => {
+            const debugBtn = document.getElementById('debug-btn');
+            if (debugBtn) {
+                debugBtn.onclick = debugWorkflow;
+            }
+        });
+    </script>
+</body>
+</html>

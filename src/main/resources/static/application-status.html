@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Application Status - Job Recruitment</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #2563eb;
+            --primary-dark: #1d4ed8;
+            --success-color: #10b981;
+            --warning-color: #f59e0b;
+            --danger-color: #ef4444;
+            --info-color: #06b6d4;
+            --dark-color: #1f2937;
+            --white: #ffffff;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-500: #6b7280;
+            --gray-600: #4b5563;
+            --gray-700: #374151;
+            --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --border-radius: 8px;
+            --transition: all 0.2s ease;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, var(--primary-color) 0%, var(--info-color) 100%);
+            min-height: 100vh;
+            color: var(--dark-color);
+            line-height: 1.6;
+            padding: 2rem;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+            color: var(--white);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.9;
+        }
+
+        .search-section {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .search-form {
+            display: flex;
+            gap: 1rem;
+            align-items: end;
+        }
+
+        .form-group {
+            flex: 1;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--gray-300);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+            box-shadow: var(--shadow-md);
+        }
+
+        .status-card {
+            background: var(--white);
+            border-radius: var(--border-radius);
+            padding: 2rem;
+            box-shadow: var(--shadow-lg);
+            display: none;
+        }
+
+        .status-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .applicant-info h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .application-id {
+            font-size: 0.9rem;
+            color: var(--gray-500);
+            font-family: 'Monaco', 'Menlo', monospace;
+            background: var(--gray-100);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            display: inline-block;
+        }
+
+        .status-badge {
+            padding: 0.75rem 1.5rem;
+            border-radius: 25px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-pending {
+            background: var(--warning-color);
+            color: var(--white);
+        }
+
+        .status-accepted {
+            background: var(--success-color);
+            color: var(--white);
+        }
+
+        .status-rejected {
+            background: var(--danger-color);
+            color: var(--white);
+        }
+
+        .timeline {
+            margin: 2rem 0;
+        }
+
+        .timeline-item {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 1.5rem;
+            position: relative;
+        }
+
+        .timeline-item:not(:last-child)::after {
+            content: '';
+            position: absolute;
+            left: 1rem;
+            top: 2.5rem;
+            width: 2px;
+            height: calc(100% + 0.5rem);
+            background: var(--gray-200);
+        }
+
+        .timeline-icon {
+            width: 2rem;
+            height: 2rem;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-right: 1rem;
+            flex-shrink: 0;
+            font-size: 0.8rem;
+        }
+
+        .timeline-icon.completed {
+            background: var(--success-color);
+            color: var(--white);
+        }
+
+        .timeline-icon.current {
+            background: var(--warning-color);
+            color: var(--white);
+        }
+
+        .timeline-icon.pending {
+            background: var(--gray-200);
+            color: var(--gray-500);
+        }
+
+        .timeline-icon.rejected {
+            background: var(--danger-color);
+            color: var(--white);
+        }
+
+        .timeline-icon.bypassed {
+            background: var(--info-color);
+            color: var(--white);
+        }
+
+        .timeline-content {
+            flex: 1;
+        }
+
+        .timeline-title {
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .timeline-description {
+            color: var(--gray-600);
+            font-size: 0.9rem;
+        }
+
+        .comments-section {
+            background: var(--gray-50);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            margin-top: 0.5rem;
+            border-left: 3px solid var(--info-color);
+        }
+
+        .comments-text {
+            font-style: italic;
+            color: var(--gray-700);
+        }
+
+        .offer-section {
+            background: var(--success-color);
+            color: var(--white);
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            margin-top: 2rem;
+            text-align: center;
+        }
+
+        .offer-section h3 {
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .offer-ctc {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: 1rem 0;
+        }
+
+        .error-message {
+            background: var(--danger-color);
+            color: var(--white);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            margin-top: 1rem;
+            display: none;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--gray-500);
+        }
+
+        .loading::after {
+            content: '';
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--gray-200);
+            border-radius: 50%;
+            border-top-color: var(--primary-color);
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 0.5rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .search-form {
+                flex-direction: column;
+            }
+
+            .status-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><i class="fas fa-search"></i> Application Status</h1>
+            <p>Track your job application progress in real-time</p>
+        </div>
+
+        <div class="search-section">
+            <form class="search-form" onsubmit="searchApplication(event)">
+                <div class="form-group">
+                    <label class="form-label" for="applicationId">Application ID</label>
+                    <input 
+                        type="text" 
+                        id="applicationId" 
+                        class="form-control" 
+                        placeholder="Enter your application ID (e.g., APP-1234567890-ABCD1234)"
+                        required
+                    />
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-search"></i>
+                    Check Status
+                </button>
+            </form>
+            <div class="error-message" id="error-message"></div>
+        </div>
+
+        <div class="status-card" id="status-card">
+            <div class="status-header">
+                <div class="applicant-info">
+                    <h2 id="applicant-name">Loading...</h2>
+                    <div class="application-id" id="display-app-id"></div>
+                </div>
+                <div class="status-badge" id="status-badge">
+                    <i class="fas fa-clock"></i>
+                    Loading...
+                </div>
+            </div>
+
+            <div class="timeline" id="timeline">
+                <!-- Timeline will be populated by JavaScript -->
+            </div>
+
+            <div class="offer-section" id="offer-section" style="display: none;">
+                <h3><i class="fas fa-trophy"></i> Congratulations!</h3>
+                <p>You have been selected for the position!</p>
+                <div class="offer-ctc" id="offer-ctc">₹0 LPA</div>
+                <p>Our HR team will contact you soon with the offer details.</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        async function searchApplication(event) {
+            event.preventDefault();
+            
+            const applicationId = document.getElementById('applicationId').value.trim();
+            const errorMessage = document.getElementById('error-message');
+            const statusCard = document.getElementById('status-card');
+            
+            // Hide previous results
+            errorMessage.style.display = 'none';
+            statusCard.style.display = 'none';
+            
+            if (!applicationId) {
+                showError('Please enter an application ID');
+                return;
+            }
+            
+            try {
+                // Show loading state
+                statusCard.style.display = 'block';
+                document.getElementById('applicant-name').textContent = 'Loading...';
+                document.getElementById('timeline').innerHTML = '<div class="loading">Loading application status...</div>';
+                
+                // Fetch application status
+                const response = await fetch(`/api/job-applications/${applicationId}/status`);
+                
+                if (!response.ok) {
+                    throw new Error('Application not found');
+                }
+                
+                const statusData = await response.json();
+                displayApplicationStatus(statusData);
+                
+            } catch (error) {
+                console.error('Failed to fetch application status:', error);
+                statusCard.style.display = 'none';
+                showError('Application not found. Please check your application ID and try again.');
+            }
+        }
+
+        function displayApplicationStatus(statusData) {
+            const appData = statusData.applicationData;
+            const approvals = statusData.approvals;
+            const currentStatus = statusData.currentStatus;
+            
+            // Update header
+            document.getElementById('applicant-name').textContent = 
+                `${appData.firstName || 'N/A'} ${appData.lastName || ''}`;
+            document.getElementById('display-app-id').textContent = `ID: ${statusData.applicationId}`;
+            
+            // Update status badge
+            const statusBadge = document.getElementById('status-badge');
+            const statusInfo = getStatusInfo(currentStatus);
+            statusBadge.className = `status-badge ${statusInfo.class}`;
+            statusBadge.innerHTML = `<i class="${statusInfo.icon}"></i> ${statusInfo.text}`;
+            
+            // Build timeline
+            buildTimeline(currentStatus, approvals, appData);
+            
+            // Show offer section if accepted
+            if (currentStatus === 'ACCEPTED' && appData.offerCTC) {
+                const offerSection = document.getElementById('offer-section');
+                const offerCTC = document.getElementById('offer-ctc');
+                offerCTC.textContent = `₹${appData.offerCTC} LPA`;
+                offerSection.style.display = 'block';
+            }
+        }
+
+        function getStatusInfo(status) {
+            switch (status) {
+                case 'STARTED':
+                case 'IN_PROGRESS':
+                    return { class: 'status-pending', icon: 'fas fa-clock', text: 'Application In Progress' };
+                case 'PENDING_HR_REVIEW':
+                    return { class: 'status-pending', icon: 'fas fa-clock', text: 'Pending HR Review' };
+                case 'HR_APPROVED':
+                    return { class: 'status-pending', icon: 'fas fa-clock', text: 'Under Technical Review' };
+                case 'PENDING_HEAD_HR_REVIEW':
+                    return { class: 'status-pending', icon: 'fas fa-clock', text: 'Pending Final Review' };
+                case 'PENDING_COMPANY_MANAGER_REVIEW':
+                    return { class: 'status-pending', icon: 'fas fa-clock', text: 'Pending Company Manager Review' };
+                case 'ACCEPTED':
+                    return { class: 'status-accepted', icon: 'fas fa-check-circle', text: 'Application Accepted' };
+                case 'REJECTED_BY_HR':
+                    return { class: 'status-rejected', icon: 'fas fa-times-circle', text: 'Rejected by HR' };
+                case 'REJECTED_BY_TL_PM':
+                    return { class: 'status-rejected', icon: 'fas fa-times-circle', text: 'Rejected by Technical Team' };
+                case 'REJECTED_BY_HEAD_HR':
+                    return { class: 'status-rejected', icon: 'fas fa-times-circle', text: 'Rejected by Head HR' };
+                case 'REJECTED_BY_COMPANY_MANAGER':
+                    return { class: 'status-rejected', icon: 'fas fa-times-circle', text: 'Rejected by Company Manager' };
+                default:
+                    return { class: 'status-pending', icon: 'fas fa-question-circle', text: status };
+            }
+        }
+
+        function buildTimeline(currentStatus, approvals, appData) {
+            const timeline = document.getElementById('timeline');
+            let timelineHTML = '';
+            
+            // Application Submitted
+            timelineHTML += createTimelineItem(
+                'completed',
+                'fas fa-paper-plane',
+                'Application Submitted',
+                `Submitted on ${formatDateTime(appData.submissionTimestamp)}`,
+                null
+            );
+            
+            // HR Review
+            const hrApproval = approvals.hr;
+            let hrStatus = 'pending';
+            let hrDescription = 'Waiting for HR review';
+            let hrComments = null;
+            
+            // Check if this is a referral application that bypassed normal flow
+            const isReferralBypass = appData.hasValidReferral === true;
+            
+            if (isReferralBypass) {
+                // For referral applications, show bypassed status
+                hrStatus = 'bypassed';
+                hrDescription = `Bypassed via referral ID: ${appData.referralId}`;
+                hrComments = 'Application fast-tracked through referral program';
+            } else if (hrApproval) {
+                hrStatus = hrApproval.decision === 'accept' ? 'completed' : 'rejected';
+                hrDescription = hrApproval.decision === 'accept' ? 'Approved by HR' : 'Rejected by HR';
+                hrComments = hrApproval.comments;
+            } else if (currentStatus === 'REJECTED_BY_HR') {
+                hrStatus = 'rejected';
+                hrDescription = 'Rejected by HR';
+            }
+            
+            timelineHTML += createTimelineItem(
+                hrStatus,
+                'fas fa-user-tie',
+                'HR Review',
+                hrDescription,
+                hrComments
+            );
+            
+            // Technical Review (Team Lead & Project Manager)
+            if (!isReferralBypass && hrApproval && hrApproval.decision === 'accept') {
+                const tlApproval = approvals.teamLead;
+                const pmApproval = approvals.projectManager;
+                
+                let techStatus = 'pending';
+                let techDescription = 'Waiting for technical team review';
+                let techComments = [];
+                
+                if (tlApproval && pmApproval) {
+                    if (tlApproval.decision === 'accept' && pmApproval.decision === 'accept') {
+                        techStatus = 'completed';
+                        techDescription = 'Approved by technical team';
+                    } else {
+                        techStatus = 'rejected';
+                        techDescription = 'Rejected by technical team';
+                    }
+                    
+                    if (tlApproval.comments) techComments.push(`Team Lead: ${tlApproval.comments}`);
+                    if (pmApproval.comments) techComments.push(`Project Manager: ${pmApproval.comments}`);
+                } else if (currentStatus.includes('REJECTED_BY_TL_PM')) {
+                    techStatus = 'rejected';
+                    techDescription = 'Rejected by technical team';
+                }
+                
+                timelineHTML += createTimelineItem(
+                    techStatus,
+                    'fas fa-code',
+                    'Technical Review',
+                    techDescription,
+                    techComments.length > 0 ? techComments.join('\n') : null
+                );
+            } else if (isReferralBypass) {
+                // Show bypassed technical review for referral applications
+                timelineHTML += createTimelineItem(
+                    'bypassed',
+                    'fas fa-code',
+                    'Technical Review',
+                    'Bypassed via referral program',
+                    'Technical review skipped for referral applications'
+                );
+            }
+            
+            // Head HR Final Review
+            if ((!isReferralBypass && approvals.teamLead && approvals.projectManager && 
+                approvals.teamLead.decision === 'accept' && approvals.projectManager.decision === 'accept') ||
+                isReferralBypass) {
+                
+                const headHRApproval = approvals.headHR;
+                let headHRStatus = 'pending';
+                let headHRDescription = 'Waiting for Head HR review';
+                let headHRComments = null;
+                
+                if (isReferralBypass) {
+                    // For referral applications, show bypassed Head HR
+                    headHRStatus = 'bypassed';
+                    headHRDescription = 'Bypassed via referral program';
+                    headHRComments = 'Head HR review skipped for referral applications';
+                } else if (headHRApproval) {
+                    headHRStatus = headHRApproval.decision === 'accept' ? 'completed' : 'rejected';
+                    headHRDescription = headHRApproval.decision === 'accept' ? 'Approved by Head HR' : 'Rejected by Head HR';
+                    headHRComments = headHRApproval.comments;
+                } else if (currentStatus === 'REJECTED_BY_HEAD_HR') {
+                    headHRStatus = 'rejected';
+                    headHRDescription = 'Rejected by Head HR';
+                }
+                
+                timelineHTML += createTimelineItem(
+                    headHRStatus,
+                    'fas fa-crown',
+                    'Head HR Review',
+                    headHRDescription,
+                    headHRComments
+                );
+                
+                // Company Manager Final Review - Always shown for applications that reach this stage
+                const companyManagerApproval = approvals.companyManager;
+                let finalStatus = 'pending';
+                let finalDescription = 'Waiting for Company Manager final decision';
+                let finalComments = null;
+                
+                if (companyManagerApproval) {
+                    finalStatus = companyManagerApproval.decision === 'accept' ? 'completed' : 'rejected';
+                    finalDescription = companyManagerApproval.decision === 'accept' ? 'Final approval - Hired!' : 'Final rejection by Company Manager';
+                    finalComments = companyManagerApproval.comments;
+                } else if (currentStatus === 'REJECTED_BY_COMPANY_MANAGER') {
+                    finalStatus = 'rejected';
+                    finalDescription = 'Final rejection by Company Manager';
+                }
+                
+                timelineHTML += createTimelineItem(
+                    finalStatus,
+                    'fas fa-building',
+                    'Company Manager Final Decision',
+                    finalDescription,
+                    finalComments
+                );
+            }
+            
+            timeline.innerHTML = timelineHTML;
+        }
+
+        function createTimelineItem(status, icon, title, description, comments) {
+            const commentsHTML = comments ? `
+                <div class="comments-section">
+                    <div class="comments-text">${comments.replace(/\n/g, '<br>')}</div>
+                </div>
+            ` : '';
+            
+            return `
+                <div class="timeline-item">
+                    <div class="timeline-icon ${status}">
+                        <i class="${icon}"></i>
+                    </div>
+                    <div class="timeline-content">
+                        <div class="timeline-title">${title}</div>
+                        <div class="timeline-description">${description}</div>
+                        ${commentsHTML}
+                    </div>
+                </div>
+            `;
+        }
+
+        function formatDateTime(dateTimeString) {
+            if (!dateTimeString) return 'N/A';
+            try {
+                const date = new Date(dateTimeString);
+                return date.toLocaleString('en-IN');
+            } catch (e) {
+                return dateTimeString;
+            }
+        }
+
+        function showError(message) {
+            const errorMessage = document.getElementById('error-message');
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+        }
+
+        // Auto-focus on application ID input and check for URL parameter
+        document.addEventListener('DOMContentLoaded', () => {
+            const urlParams = new URLSearchParams(window.location.search);
+            const applicationId = urlParams.get('id');
+            
+            if (applicationId) {
+                document.getElementById('applicationId').value = applicationId;
+                // Auto-search if ID is provided
+                searchApplication({ preventDefault: () => {} });
+            } else {
+                document.getElementById('applicationId').focus();
+            }
+        });
+    </script>
+</body>
+</html>

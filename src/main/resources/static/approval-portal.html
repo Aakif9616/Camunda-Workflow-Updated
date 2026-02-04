@@ -1,0 +1,812 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Approval Portal - Job Recruitment</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary-color: #1a73e8;
+            --primary-hover: #1557b0;
+            --secondary-color: #5f6368;
+            --accent-color: #34a853;
+            --accent-hover: #2d8f47;
+            --white: #ffffff;
+            --gray-50: #fafafa;
+            --gray-100: #f5f5f5;
+            --gray-200: #e8eaed;
+            --gray-300: #dadce0;
+            --gray-400: #bdc1c6;
+            --gray-500: #9aa0a6;
+            --gray-600: #80868b;
+            --gray-700: #5f6368;
+            --gray-800: #3c4043;
+            --gray-900: #202124;
+            --text-primary: #202124;
+            --text-secondary: #5f6368;
+            --success-color: #34a853;
+            --error-color: #ea4335;
+            --warning-color: #fbbc04;
+            --purple-color: #9c27b0;
+            --shadow-sm: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 1px 3px 1px rgba(60, 64, 67, 0.15);
+            --shadow-md: 0 1px 2px 0 rgba(60, 64, 67, 0.3), 0 2px 6px 2px rgba(60, 64, 67, 0.15);
+            --shadow-lg: 0 2px 4px 0 rgba(60, 64, 67, 0.3), 0 8px 12px 6px rgba(60, 64, 67, 0.15);
+            --border-radius: 8px;
+            --transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Google Sans', 'Roboto', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            min-height: 100vh;
+            color: var(--text-primary);
+            line-height: 1.5;
+            position: relative;
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: 
+                radial-gradient(circle at 20% 20%, rgba(26, 115, 232, 0.05) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(156, 39, 176, 0.05) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: -1;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 2rem;
+            color: var(--text-primary);
+        }
+
+        .header h1 {
+            font-size: 2rem;
+            font-weight: 400;
+            margin-bottom: 0.5rem;
+            letter-spacing: -0.5px;
+        }
+
+        .header p {
+            font-size: 1rem;
+            color: var(--text-secondary);
+        }
+
+        .back-button {
+            position: absolute;
+            top: 2rem;
+            left: 2rem;
+            background: var(--white);
+            color: var(--primary-color);
+            border: 1px solid var(--gray-300);
+            padding: 0.75rem 1rem;
+            border-radius: var(--border-radius);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 500;
+            transition: var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .back-button:hover {
+            background: var(--gray-50);
+            border-color: var(--primary-color);
+            box-shadow: var(--shadow-md);
+        }
+
+        .main-content {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            flex: 1;
+            padding: 2rem 0;
+        }
+
+        .auth-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            padding: 2rem;
+            width: 100%;
+            max-width: 400px;
+            border: 1px solid var(--gray-200);
+            backdrop-filter: blur(10px);
+        }
+
+        .auth-form {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        .form-label {
+            display: block;
+            font-weight: 600;
+            color: var(--dark-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .form-control {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--gray-300);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
+            transition: var(--transition);
+        }
+
+        .form-control:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+
+        .btn {
+            width: 100%;
+            padding: 0.75rem;
+            border: none;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .btn-primary {
+            background: var(--primary-color);
+            color: var(--white);
+        }
+
+        .btn-primary:hover {
+            background: var(--primary-dark);
+        }
+
+        .btn-primary:disabled {
+            background: var(--gray-300);
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            background: var(--danger-color);
+            color: var(--white);
+            padding: 0.75rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 1rem;
+            display: none;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid var(--white);
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .dashboard-container {
+            display: none;
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: var(--border-radius);
+            box-shadow: var(--shadow-lg);
+            padding: 2rem;
+            margin: 0 auto;
+            border: 1px solid var(--gray-200);
+            backdrop-filter: blur(10px);
+            position: relative;
+            max-width: 1200px;
+            width: 100%;
+            align-self: center;
+        }
+
+        .dashboard-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, var(--primary-color), var(--purple-color));
+            border-radius: var(--border-radius) var(--border-radius) 0 0;
+        }
+
+        .user-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid var(--gray-200);
+        }
+
+        .user-details h3 {
+            color: var(--dark-color);
+            margin-bottom: 0.25rem;
+        }
+
+        .user-details p {
+            color: var(--gray-600);
+            font-size: 0.9rem;
+        }
+
+        .role-badge {
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            margin-top: 0.25rem;
+            display: inline-block;
+        }
+
+        .role-hr {
+            background: var(--primary-color);
+            color: var(--white);
+        }
+
+        .role-team_lead {
+            background: var(--purple-color);
+            color: var(--white);
+        }
+
+        .role-project_manager {
+            background: var(--success-color);
+            color: var(--white);
+        }
+
+        .role-head_hr {
+            background: var(--danger-color);
+            color: var(--white);
+        }
+
+        .role-company_manager {
+            background: var(--warning-color);
+            color: var(--white);
+        }
+
+        .logout-btn {
+            background: var(--danger-color);
+            color: var(--white);
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: var(--border-radius);
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .logout-btn:hover {
+            background: #dc2626;
+        }
+
+        .dashboard-actions {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .action-card {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 2rem;
+            border-radius: var(--border-radius);
+            text-align: center;
+            transition: var(--transition);
+            cursor: pointer;
+            border: 1px solid var(--gray-200);
+            text-decoration: none;
+            color: var(--text-primary);
+            box-shadow: var(--shadow-sm);
+            backdrop-filter: blur(5px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .action-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(26, 115, 232, 0.1), transparent);
+            transition: left 0.5s ease;
+        }
+
+        .action-card:hover::before {
+            left: 100%;
+        }
+
+        .action-card:hover {
+            background: rgba(255, 255, 255, 1);
+            transform: translateY(-6px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary-color);
+        }
+
+        .action-card i {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+
+        .action-card.hr i {
+            color: var(--primary-color);
+        }
+
+        .action-card.teamlead i {
+            color: var(--purple-color);
+        }
+
+        .action-card.projectmanager i {
+            color: var(--success-color);
+        }
+
+        .action-card.headhr i {
+            color: var(--danger-color);
+        }
+
+        .action-card.companymanager i {
+            color: var(--warning-color);
+        }
+
+        .action-card h4 {
+            margin-bottom: 0.5rem;
+            color: var(--dark-color);
+            font-size: 1.2rem;
+        }
+
+        .action-card p {
+            font-size: 0.9rem;
+            color: var(--gray-600);
+            line-height: 1.5;
+        }
+
+        .credentials-info {
+            background: linear-gradient(135deg, rgba(26, 115, 232, 0.05), rgba(255, 255, 255, 0.8));
+            padding: 1.5rem;
+            border-radius: var(--border-radius);
+            margin-bottom: 2rem;
+            border-left: 4px solid var(--primary-color);
+            backdrop-filter: blur(5px);
+        }
+
+        .credentials-info h4 {
+            color: var(--dark-color);
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .credentials-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .credential-item {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 1rem;
+            border-radius: var(--border-radius);
+            border: 1px solid var(--gray-200);
+            backdrop-filter: blur(5px);
+            transition: var(--transition);
+        }
+
+        .credential-item:hover {
+            background: rgba(255, 255, 255, 1);
+            box-shadow: var(--shadow-sm);
+            transform: translateY(-1px);
+        }
+
+        .credential-item strong {
+            color: var(--dark-color);
+            display: block;
+            margin-bottom: 0.25rem;
+        }
+
+        .credential-item code {
+            background: var(--gray-100);
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-family: 'Monaco', 'Menlo', monospace;
+            font-size: 0.9rem;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 1rem;
+            }
+
+            .back-button {
+                position: relative;
+                top: 0;
+                left: 0;
+                margin-bottom: 1rem;
+            }
+
+            .dashboard-actions {
+                grid-template-columns: 1fr;
+            }
+
+            .credentials-list {
+                grid-template-columns: 1fr;
+            }
+
+            .user-info {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 1rem;
+            }
+
+            .main-content {
+                padding: 1rem 0;
+            }
+
+            .header {
+                margin-bottom: 1.5rem;
+            }
+
+            .header h1 {
+                font-size: 1.5rem;
+            }
+
+            .dashboard-container {
+                padding: 1.5rem;
+                margin: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <a href="home.html" class="back-button">
+            <i class="fas fa-arrow-left"></i>
+            Back to Home
+        </a>
+
+        <div class="header">
+            <h1><i class="fas fa-users-cog"></i> Approval Portal</h1>
+            <p>Access your role-based dashboard to review applications</p>
+        </div>
+
+        <div class="main-content">
+            <!-- Authentication Container -->
+            <div class="auth-container" id="auth-container">
+                <div class="credentials-info">
+                    <h4>
+                        <i class="fas fa-info-circle"></i>
+                        Default Login Credentials
+                    </h4>
+                    <div class="credentials-list">
+                        <div class="credential-item">
+                            <strong>HR Manager</strong>
+                            <div>Username: <code>hr</code></div>
+                            <div>Password: <code>hr123</code></div>
+                        </div>
+                        <div class="credential-item">
+                            <strong>Team Lead</strong>
+                            <div>Username: <code>teamlead</code></div>
+                            <div>Password: <code>tl123</code></div>
+                        </div>
+                        <div class="credential-item">
+                            <strong>Project Manager</strong>
+                            <div>Username: <code>projectmanager</code></div>
+                            <div>Password: <code>pm123</code></div>
+                        </div>
+                        <div class="credential-item">
+                            <strong>Head HR</strong>
+                            <div>Username: <code>headhr</code></div>
+                            <div>Password: <code>hhr123</code></div>
+                        </div>
+                        <div class="credential-item">
+                            <strong>Company Manager</strong>
+                            <div>Username: <code>companymanager</code></div>
+                            <div>Password: <code>cm123</code></div>
+                        </div>
+                    </div>
+                </div>
+
+                <form class="auth-form" id="login-form" onsubmit="handleLogin(event)">
+                    <div class="error-message" id="login-error"></div>
+                    
+                    <div class="form-group">
+                        <label class="form-label" for="login-username">Username</label>
+                        <input type="text" id="login-username" class="form-control" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="form-label" for="login-password">Password</label>
+                        <input type="password" id="login-password" class="form-control" required>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary" id="login-btn">
+                        <i class="fas fa-sign-in-alt"></i>
+                        Login to Dashboard
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Dashboard Container (shown after login) -->
+        <div class="dashboard-container" id="dashboard-container">
+            <div class="user-info">
+                <div class="user-details">
+                    <h3 id="user-name">Welcome!</h3>
+                    <p id="user-email"></p>
+                    <span class="role-badge" id="user-role-badge"></span>
+                </div>
+                <button class="logout-btn" onclick="handleLogout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    Logout
+                </button>
+            </div>
+
+            <div class="dashboard-actions" id="dashboard-actions">
+                <!-- Dashboard links will be populated based on user role -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+
+        // Check if user is already logged in
+        document.addEventListener('DOMContentLoaded', () => {
+            checkSession();
+        });
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            
+            const username = document.getElementById('login-username').value;
+            const password = document.getElementById('login-password').value;
+            const loginBtn = document.getElementById('login-btn');
+            
+            // Show loading state
+            loginBtn.disabled = true;
+            loginBtn.innerHTML = '<span class="loading-spinner"></span> Logging in...';
+            
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const result = await response.json();
+                
+                if (result.success) {
+                    currentUser = result.user;
+                    
+                    // Check if user has approval role
+                    const approvalRoles = ['HR', 'TEAM_LEAD', 'PROJECT_MANAGER', 'HEAD_HR', 'COMPANY_MANAGER'];
+                    if (approvalRoles.includes(currentUser.role)) {
+                        showDashboard();
+                        clearMessages();
+                    } else {
+                        showError('login-error', 'Access denied. This portal is for approval staff only.');
+                    }
+                } else {
+                    showError('login-error', result.error || 'Login failed');
+                }
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                showError('login-error', 'Login failed. Please try again.');
+            } finally {
+                // Reset button state
+                loginBtn.disabled = false;
+                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login to Dashboard';
+            }
+        }
+
+        async function handleLogout() {
+            try {
+                await fetch('/api/auth/logout', { method: 'POST' });
+                currentUser = null;
+                showAuthContainer();
+            } catch (error) {
+                console.error('Logout error:', error);
+                // Force logout on client side
+                currentUser = null;
+                showAuthContainer();
+            }
+        }
+
+        async function checkSession() {
+            try {
+                const response = await fetch('/api/auth/session');
+                const result = await response.json();
+                
+                if (result.success) {
+                    const approvalRoles = ['HR', 'TEAM_LEAD', 'PROJECT_MANAGER', 'HEAD_HR', 'COMPANY_MANAGER'];
+                    if (approvalRoles.includes(result.user.role)) {
+                        currentUser = result.user;
+                        showDashboard();
+                    }
+                }
+            } catch (error) {
+                console.error('Session check error:', error);
+            }
+        }
+
+        function showDashboard() {
+            const authContainer = document.getElementById('auth-container');
+            const dashboardContainer = document.getElementById('dashboard-container');
+            const mainContent = document.querySelector('.main-content');
+            
+            authContainer.style.display = 'none';
+            dashboardContainer.style.display = 'flex';
+            dashboardContainer.style.flexDirection = 'column';
+            
+            // Ensure main content stays centered
+            mainContent.style.alignItems = 'center';
+            mainContent.style.justifyContent = 'center';
+            
+            // Update user info
+            document.getElementById('user-name').textContent = `Welcome, ${currentUser.fullName}!`;
+            document.getElementById('user-email').textContent = currentUser.email;
+            
+            // Update role badge
+            const roleBadge = document.getElementById('user-role-badge');
+            roleBadge.textContent = formatRole(currentUser.role);
+            roleBadge.className = `role-badge role-${currentUser.role.toLowerCase()}`;
+            
+            // Populate dashboard actions based on role
+            populateDashboardActions();
+        }
+
+        function showAuthContainer() {
+            const authContainer = document.getElementById('auth-container');
+            const dashboardContainer = document.getElementById('dashboard-container');
+            const mainContent = document.querySelector('.main-content');
+            
+            authContainer.style.display = 'block';
+            dashboardContainer.style.display = 'none';
+            
+            // Ensure main content stays centered
+            mainContent.style.alignItems = 'center';
+            mainContent.style.justifyContent = 'center';
+            
+            clearForm();
+        }
+
+        function populateDashboardActions() {
+            const actionsContainer = document.getElementById('dashboard-actions');
+            let actionsHTML = '';
+
+            switch (currentUser.role) {
+                case 'HR':
+                    actionsHTML = `
+                        <a href="hr-dashboard.html" class="action-card hr">
+                            <i class="fas fa-users-cog"></i>
+                            <h4>HR Dashboard</h4>
+                            <p>Review and approve job applications. Initial screening and candidate evaluation.</p>
+                        </a>
+                    `;
+                    break;
+
+                case 'TEAM_LEAD':
+                    actionsHTML = `
+                        <a href="teamlead-dashboard.html" class="action-card teamlead">
+                            <i class="fas fa-code"></i>
+                            <h4>Team Lead Dashboard</h4>
+                            <p>Technical assessment and skills evaluation for HR-approved candidates.</p>
+                        </a>
+                    `;
+                    break;
+
+                case 'PROJECT_MANAGER':
+                    actionsHTML = `
+                        <a href="projectmanager-dashboard.html" class="action-card projectmanager">
+                            <i class="fas fa-project-diagram"></i>
+                            <h4>Project Manager Dashboard</h4>
+                            <p>Project fit assessment and resource planning for approved candidates.</p>
+                        </a>
+                    `;
+                    break;
+
+                case 'HEAD_HR':
+                    actionsHTML = `
+                        <a href="headhr-dashboard.html" class="action-card headhr">
+                            <i class="fas fa-crown"></i>
+                            <h4>Head HR Dashboard</h4>
+                            <p>Final hiring decisions and offer management for fully approved candidates.</p>
+                        </a>
+                    `;
+                    break;
+
+                case 'COMPANY_MANAGER':
+                    actionsHTML = `
+                        <a href="companymanager-dashboard.html" class="action-card companymanager">
+                            <i class="fas fa-building"></i>
+                            <h4>Company Manager Dashboard</h4>
+                            <p>Ultimate approval authority for all applications and referral-based hires.</p>
+                        </a>
+                    `;
+                    break;
+            }
+
+            // Add common actions for all roles
+            actionsHTML += `
+                <a href="/camunda/app/cockpit/default/" target="_blank" class="action-card">
+                    <i class="fas fa-chart-line"></i>
+                    <h4>Workflow Monitor</h4>
+                    <p>Monitor workflow progress and process instances in Camunda Cockpit.</p>
+                </a>
+            `;
+
+            actionsContainer.innerHTML = actionsHTML;
+        }
+
+        function formatRole(role) {
+            const roleMap = {
+                'HR': 'HR Manager',
+                'TEAM_LEAD': 'Team Lead',
+                'PROJECT_MANAGER': 'Project Manager',
+                'HEAD_HR': 'Head HR',
+                'COMPANY_MANAGER': 'Company Manager'
+            };
+            return roleMap[role] || role;
+        }
+
+        function showError(elementId, message) {
+            const errorElement = document.getElementById(elementId);
+            errorElement.textContent = message;
+            errorElement.style.display = 'block';
+        }
+
+        function clearMessages() {
+            document.querySelectorAll('.error-message').forEach(el => {
+                el.style.display = 'none';
+            });
+        }
+
+        function clearForm() {
+            document.getElementById('login-form').reset();
+            clearMessages();
+        }
+    </script>
+</body>
+</html>
