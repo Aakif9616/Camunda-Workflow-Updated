@@ -452,6 +452,12 @@ public class JobApplicationService {
     
     private void updateStatusFromCurrentTask(String processInstanceId, String applicationId, Map<String, Object> appData) {
         try {
+            // Don't override if manually set to HIRED
+            if (appData.containsKey("manualStatusOverride") && (Boolean) appData.get("manualStatusOverride")) {
+                logger.info("Skipping Camunda status sync for application {} - manual status override active", applicationId);
+                return;
+            }
+            
             Task currentTask = taskService.createTaskQuery()
                 .processInstanceId(processInstanceId)
                 .active()
@@ -912,6 +918,7 @@ public class JobApplicationService {
             appData.put("department", department);
             appData.put("hiredByHR", true);
             appData.put("hiredTimestamp", LocalDateTime.now().toString());
+            appData.put("manualStatusOverride", true); // Prevent Camunda sync from overwriting
             applicationStatusStore.put(applicationId, "HIRED");
             
             // Send congratulations email with onboarding link
@@ -943,7 +950,7 @@ public class JobApplicationService {
             result.put("department", department);
             result.put("timestamp", LocalDateTime.now().toString());
             
-            logger.info("Candidate hired by HR for application {}: joining={}, dept={}", applicationId, joiningDate, department);
+            logger.info("Candidate hired by HR for application {}: joining={}, dept={}, status=HIRED", applicationId, joiningDate, department);
             
             return result;
             

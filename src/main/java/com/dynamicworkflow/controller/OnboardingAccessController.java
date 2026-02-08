@@ -36,30 +36,33 @@ public class OnboardingAccessController {
             
             if (applicationId == null || email == null) {
                 logger.warn("Invalid onboarding token accessed: {}", token);
-                model.addAttribute("error", "Invalid or expired onboarding link");
-                return "onboarding-error";
+                return "redirect:/onboarding-error.html?error=Invalid or expired onboarding link";
             }
             
             // Get application data
             Map<String, Object> applicationData = jobApplicationService.getApplicationById(applicationId);
             if (applicationData == null) {
-                model.addAttribute("error", "Application not found");
-                return "onboarding-error";
+                return "redirect:/onboarding-error.html?error=Application not found";
             }
             
             // Verify email matches
             String applicationEmail = (String) applicationData.get("email");
             if (!email.equals(applicationEmail)) {
                 logger.warn("Email mismatch for onboarding token: {} vs {}", email, applicationEmail);
-                model.addAttribute("error", "Access denied");
-                return "onboarding-error";
+                return "redirect:/onboarding-error.html?error=Access denied";
             }
             
             // Check if application is in correct state for onboarding
             String status = (String) applicationData.get("applicationStatus");
-            if (!"HIRED".equals(status) && !"PENDING_ONBOARDING".equals(status) && !"ACCEPTED".equals(status)) {
-                model.addAttribute("error", "Application is not ready for onboarding");
-                return "onboarding-error";
+            logger.info("Onboarding access attempt for application {} with status: {}", applicationId, status);
+            
+            if (!"HIRED".equals(status) && 
+                !"PENDING_ONBOARDING".equals(status) && 
+                !"ACCEPTED".equals(status) &&
+                !"ONBOARDING_INITIATED".equals(status) &&
+                !"PENDING_HR_HIRING".equals(status)) {
+                logger.warn("Application {} not ready for onboarding. Current status: {}", applicationId, status);
+                return "redirect:/onboarding-error.html?error=Application is not ready for onboarding. Current status: " + status;
             }
             
             // Redirect to onboarding form with secure session
@@ -67,8 +70,7 @@ public class OnboardingAccessController {
             
         } catch (Exception e) {
             logger.error("Error handling onboarding access", e);
-            model.addAttribute("error", "An error occurred while processing your request");
-            return "onboarding-error";
+            return "redirect:/onboarding-error.html?error=An error occurred while processing your request";
         }
     }
 }
